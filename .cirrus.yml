@@ -1,0 +1,31 @@
+poudriere_task:
+  freebsd_instance:
+    image_family: freebsd-14-0-snap
+
+  install_dependencies_script:
+    - pkg install -y git poudriere-devel
+
+  create_poudriere_jail_script:
+    - poudriere jail -c -j router -v 13.0-RELEASE -K GENERIC
+
+  create_ports_tree_script:
+    - poudriere ports -c -U https://git.freebsd.org/ports.git -B 2022Q1 -p quarterly
+
+  build_ports_script:
+    - poudriere bulk -j router -p quarterly -f pkglist
+
+  create_router_image_script:
+    - poudriere image -t zfs -j router -s 4g -p quarterly -h router.home -n router -f pkglist -c overlaydir -B pre-script.sh -b -w 2g
+
+  create_router_be_script:
+    - poudriere image -t zfs+send+be -j router -s 4g -p quarterly -h router.home -n router -f pkglist -c overlaydir -B pre-script.sh -b -w 2g
+
+  prepare_artifacts_script:
+    - mkdir $CIRRUS_WORKING_DIR/router
+    - cp /usr/local/poudriere/data/images/router.img router
+    - cp /usr/local/poudriere/data/images/router.be.zfs router
+    - xz -9 --keep router/router.img
+    - xz -9 --keep router/router.be.zfs
+
+  router_artifacts:
+    path: router/**
