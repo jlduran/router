@@ -47,10 +47,12 @@ _preheat_create_packages_directory
 _XXX_patch_poudriere
 _preheat_fetch_packagesite
 
-## fetch pkg
-_preheat_fetch_pkg "ports-mgmt/pkg"
+## bootstrap pkg
+## XXX pre-heat this as well
+echo "ports-mgmt/pkg" > pkglist.bootstrap
+poudriere bulk -j router -p quarterly -f pkglist.bootstrap
 
 ## fetch each origin from pkglist
 while read -r _origin; do
 	_preheat_fetch_pkg "$_origin"
-done < "$CIRRUS_WORKING_DIR"/pkglist
+done < ${CIRRUS_WORKING_DIR}/pkglist
