@@ -22,10 +22,10 @@ _preheat_fetch_pkg()
 {
 	_origin="$1"
 
-	_path="$(_preheat_origin_get_path $_origin)"
+	_path="$(_preheat_origin_get_path "$_origin")"
 	fetch -o /usr/local/poudriere/data/packages/${PREHEAT_POUDRIERE_JAILNAME}-${PREHEAT_POUDRIERE_PTNAME}/"${_path}" http://pkg.freebsd.org/FreeBSD:13:amd64/quarterly/"${_path}"
 
-	_path_txz="${path%%.pkg}.txz"
+	_path_txz="${_path%%.pkg}.txz"
 	ln -s /usr/local/poudriere/data/packages/${PREHEAT_POUDRIERE_JAILNAME}-${PREHEAT_POUDRIERE_PTNAME}/"${_path}" /usr/local/poudriere/data/packages/${PREHEAT_POUDRIERE_JAILNAME}-${PREHEAT_POUDRIERE_PTNAME}/"${_path_txz}"
 }
 
@@ -51,6 +51,6 @@ _preheat_fetch_packagesite
 _preheat_fetch_pkg "ports-mgmt/pkg"
 
 ## fetch each origin from pkglist
-for _origin in $(cat $CIRRUS_WORKING_DIR/pkglist); do
+while read -r _origin; do
 	_preheat_fetch_pkg "$_origin"
-done
+done < "$CIRRUS_WORKING_DIR"/pkglist
