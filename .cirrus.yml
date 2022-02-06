@@ -1,6 +1,6 @@
 poudriere_task:
   freebsd_instance:
-    image_family: freebsd-13-0
+    image_family: freebsd-14-0-snap
 
   install_dependencies_script:
     - pkg install -y git poudriere-devel jq
