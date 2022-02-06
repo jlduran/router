@@ -1,6 +1,6 @@
 poudriere_task:
   freebsd_instance:
-    image_family: freebsd-14-0-snap
+    image_family: freebsd-13-0
 
   install_dependencies_script:
     - pkg install -y git poudriere-devel jq
@@ -12,7 +12,7 @@ poudriere_task:
     - poudriere ports -c -U https://git.freebsd.org/ports.git -B 2022Q1 -p quarterly
 
   build_ports_script:
-    #- sh .cirrus/preheat_poudriere.sh
+    - sh .cirrus/preheat_poudriere.sh
     - poudriere bulk -j router -p quarterly -f pkglist
 
   create_router_image_script:
