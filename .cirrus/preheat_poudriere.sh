@@ -21,3 +21,6 @@ mkdir -p /usr/local/poudriere/data/packages/router-quarterly/All
 
 pkg fetch -dy $(cat $CIRRUS_WORKING_DIR/pkglist)
 cp /var/cache/pkg/* /usr/local/poudriere/data/packages/router-quarterly/All
+
+# XXX Patch poudriere
+fetch -o /usr/local/share/poudriere/image_zfs.sh https://raw.githubusercontent.com/freebsd/poudriere/master/src/share/poudriere/image_zfs.sh
