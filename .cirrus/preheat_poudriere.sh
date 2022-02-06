@@ -4,9 +4,12 @@
 #
 # Download pre-built packages to avoid timeouts and speed up the process.
 
+PREHEAT_POUDRIERE_JAILNAME="router"
+PREHEAT_POUDRIERE_PTNAME="quarterly"
+
 _preheat_create_packages_directory()
 {
-	mkdir -p /usr/local/poudriere/data/packages/router-quarterly/All
+	mkdir -p /usr/local/poudriere/data/packages/${PREHEAT_POUDRIERE_JAILNAME}-${PREHEAT_POUDRIERE_PTNAME}/All
 }
 
 _preheat_fetch_packagesite()
@@ -20,10 +23,10 @@ _preheat_fetch_pkg()
 	_origin="$1"
 
 	_path="$(_preheat_origin_get_path $_origin)"
-	fetch -o /usr/local/poudriere/data/packages/router-quarterly/"${_path}" http://pkg.freebsd.org/FreeBSD:13:amd64/quarterly/"${_path}"
+	fetch -o /usr/local/poudriere/data/packages/${PREHEAT_POUDRIERE_JAILNAME}-${PREHEAT_POUDRIERE_PTNAME}/"${_path}" http://pkg.freebsd.org/FreeBSD:13:amd64/quarterly/"${_path}"
 
-	_path_txz="$(echo ${path%%.pkg}).txz"
-	ln -s /usr/local/poudriere/data/packages/router-quarterly/"${_path}" /usr/local/poudriere/data/packages/router-quarterly/"${_path_txz}"
+	_path_txz="${path%%.pkg}.txz"
+	ln -s /usr/local/poudriere/data/packages/${PREHEAT_POUDRIERE_JAILNAME}-${PREHEAT_POUDRIERE_PTNAME}/"${_path}" /usr/local/poudriere/data/packages/${PREHEAT_POUDRIERE_JAILNAME}-${PREHEAT_POUDRIERE_PTNAME}/"${_path_txz}"
 }
 
 _preheat_origin_get_path()
