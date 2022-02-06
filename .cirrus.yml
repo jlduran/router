@@ -25,8 +25,8 @@ poudriere_task:
     - mkdir $CIRRUS_WORKING_DIR/router
     - cp /usr/local/poudriere/data/images/router.img router
     - cp /usr/local/poudriere/data/images/router.be.zfs router
-    - xz -9 --keep router/router.img
-    - xz -9 --keep router/router.be.zfs
+    - xz -9 router/router.img
+    - xz -9 router/router.be.zfs
 
   router_artifacts:
     path: router/**
