@@ -1,14 +1,15 @@
 benchmarks/iperf3
-dns/unbound
+dns/bind916
 editors/vim
 lang/python
 net/arping
 net/bird2
 net/dpinger
-net/isc-dhcp44-server
+net/kea
 security/ca_root_nss
 security/strongswan
 security/sudo
+security/tpm2-tools
 sysutils/devcpu-data-intel
 sysutils/flashrom
 sysutils/intel-pcm
