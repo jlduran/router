@@ -13,8 +13,8 @@ NANO_WORLDDIR="${WRKDIR}/world"
 
 _zfs_populate_cfg()
 {
-	if [ -d "${SAVED_PWD}/cfg.bhyve" ]; then
-		CFGDIR="${SAVED_PWD}/cfg.bhyve"
+	if [ -d "${SAVED_PWD}/cfg" ]; then
+		CFGDIR="${SAVED_PWD}/cfg"
 
 		cp -a ${CFGDIR}/* ${NANO_WORLDDIR}/cfg
 	fi
