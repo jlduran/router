@@ -20,6 +20,21 @@ _zfs_populate_cfg()
 	fi
 }
 
+#
+# Convert a directory into a symlink. Takes two arguments, the
+# current directory and what it should become a symlink to. The
+# directory is removed and a symlink is created.
+#
+_zfs_tgt_dir2symlink()
+{
+	dir=$1
+	symlink=$2
+
+	cd "${NANO_WORLDDIR}"
+	rm -xrf "$dir"
+	ln -s "$symlink" "$dir"
+}
+
 _zfs_setup_nanobsd()
 {
 	(
@@ -58,6 +73,10 @@ _zfs_setup_nanobsd()
 
 	# pick up config files from the special partition
 	echo "mount -t zfs ${ZFS_POOL_NAME}/cfg" > conf/default/etc/remount
+
+	# Put /tmp on the /var ramdisk (could be symlink already)
+	_zfs_tgt_dir2symlink tmp var/tmp
+
 	)
 }
 
@@ -103,7 +122,8 @@ zfs_prepare()
 		zfs create -o mountpoint=none ${zroot}/${ZFS_BEROOT_NAME}
 		zfs create -o mountpoint=/ ${zroot}/${ZFS_BEROOT_NAME}/${ZFS_BOOTFS_NAME}
 		zfs create -o mountpoint=/cfg ${zroot}/cfg
-		zfs create -o mountpoint=/tmp -o exec=on -o setuid=off ${zroot}/tmp
+		# XXX Put /tmp on the /var ramdisk
+		#zfs create -o mountpoint=/tmp -o exec=on -o setuid=off ${zroot}/tmp
 		zfs create -o mountpoint=/usr -o canmount=off ${zroot}/usr
 		zfs create ${zroot}/usr/home
 		zfs create -o setuid=off ${zroot}/usr/ports
