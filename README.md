@@ -69,7 +69,7 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
    3. From the router, import the new BE
 
-          fetch -o https://srv/router.be.zfs.xz | unxz | bectl import newbe
+          fetch -o - https://srv/router.be.zfs.xz | unxz | bectl import newbe
 
    4. Boot once
 
