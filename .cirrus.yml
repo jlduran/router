@@ -1,6 +1,8 @@
 poudriere_task:
   env:
     GITHUB_TOKEN: ENCRYPTED[!a330bd1134ffd9c9fe13b7ab0fe920dc12c19d297efb0ac3c5492b3d7f1755fcdc05fdf702ad0748c07880abba88419d!]
+    FREEBSD_VERSION: 13.0-RELEASE
+    PORTS_BRANCH: 2022Q1
 
   freebsd_instance:
     image_family: freebsd-14-0-snap
@@ -9,10 +11,10 @@ poudriere_task:
     - pkg install -y git poudriere-devel jq
 
   create_poudriere_jail_script:
-    - poudriere jail -c -j router -v 13.0-RELEASE -K GENERIC
+    - poudriere jail -c -j router -v $FREEBSD_VERSION -K GENERIC
 
   create_ports_tree_script:
-    - poudriere ports -c -U https://git.freebsd.org/ports.git -B 2022Q1 -p quarterly
+    - poudriere ports -c -U https://git.freebsd.org/ports.git -B $PORTS_BRANCH -p quarterly
 
   build_ports_script:
     - sh .cirrus/preheat_poudriere.sh
