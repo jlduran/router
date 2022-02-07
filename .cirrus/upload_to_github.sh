@@ -1,6 +1,10 @@
 #!/bin/sh
 
 if [ -z "$CIRRUS_RELEASE" ]; then
+    CIRRUS_RELEASE=$CIRRUS_TAG
+fi
+
+if [ -z "$CIRRUS_RELEASE" ]; then
   echo "Not a release. No need to deploy!"
   exit 0
 fi
