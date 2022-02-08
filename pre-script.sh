@@ -224,11 +224,11 @@ zfs_generate()
 			fi
 		fi
 		mkimg -s gpt \
-			  -p efi/efiboot0:=${espfilename} \
-			  ${SWAPFIRST} \
-			  -p freebsd-zfs/zfs0:=${zfsimage} \
-			  ${SWAPLAST} \
-			  -o "${OUTPUTDIR}/${FINALIMAGE}"
+		    -p efi/efiboot0:=${espfilename} \
+		    ${SWAPFIRST} \
+		    -p freebsd-zfs/zfs0:=${zfsimage} \
+		    ${SWAPLAST} \
+		    -o "${OUTPUTDIR}/${FINALIMAGE}"
 		rm -rf ${espfilename}
 		;;
 	esac
