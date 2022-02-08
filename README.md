@@ -1,6 +1,6 @@
 # Home Router
 
-FreeBSD-based, built using poudriere custom scripts.
+FreeBSD-based, built using poudriere.
 
 Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project].
 
