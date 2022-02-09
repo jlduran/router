@@ -4,6 +4,8 @@
 #
 # Download pre-built packages to avoid timeouts and speed up the process.
 
+PREHEAT_FREEBSD_VERSION="13"
+PREHEAT_ARCH="amd64"
 PREHEAT_POUDRIERE_JAILNAME="router"
 PREHEAT_POUDRIERE_PTNAME="quarterly"
 PREHEAT_PYTHON_SUFFIX="py38"
@@ -11,11 +13,6 @@ PREHEAT_PYTHON_SUFFIX="py38"
 _XXX_patch_poudriere()
 {
 	fetch -o /usr/local/share/poudriere/image_zfs.sh https://raw.githubusercontent.com/freebsd/poudriere/master/src/share/poudriere/image_zfs.sh
-}
-
-_preheat_create_packages_directory()
-{
-	mkdir -p /usr/local/poudriere/data/packages/${PREHEAT_POUDRIERE_JAILNAME}-${PREHEAT_POUDRIERE_PTNAME}/All
 }
 
 _preheat_fetch_deps()
@@ -35,7 +32,7 @@ _preheat_fetch_deps()
 
 _preheat_fetch_packagesite()
 {
-	fetch http://pkg.freebsd.org/FreeBSD:13:amd64/quarterly/packagesite.txz
+	fetch http://pkg.freebsd.org/FreeBSD:${PREHEAT_FREEBSD_VERSION}:${PREHEAT_ARCH}/${PREHEAT_POUDRIERE_PTNAME}/packagesite.txz
 	tar -zxf packagesite.txz packagesite.yaml
 }
 
@@ -45,7 +42,7 @@ _preheat_fetch_pkg()
 
 	_path="$(_preheat_origin_get_path "$_origin")"
 	fetch -o /usr/local/poudriere/data/packages/${PREHEAT_POUDRIERE_JAILNAME}-${PREHEAT_POUDRIERE_PTNAME}/"${_path}" \
-	    http://pkg.freebsd.org/FreeBSD:13:amd64/quarterly/"${_path}"
+	    http://pkg.freebsd.org/FreeBSD:${PREHEAT_FREEBSD_VERSION}:${PREHEAT_ARCH}/${PREHEAT_POUDRIERE_PTNAME}/"${_path}"
 
 	_path_txz="${_path%%.pkg}.txz"
 	ln -fs /usr/local/poudriere/data/packages/${PREHEAT_POUDRIERE_JAILNAME}-${PREHEAT_POUDRIERE_PTNAME}/"${_path}" \
@@ -80,13 +77,12 @@ _preheat_python_suffix()
 # Pre-heat
 #
 _XXX_patch_poudriere
-_preheat_create_packages_directory
 _preheat_fetch_packagesite
 
 ## bootstrap pkg
 ## XXX pre-heat this as well
 echo "ports-mgmt/pkg" > pkglist.bootstrap
-poudriere bulk -j router -p quarterly -f pkglist.bootstrap
+poudriere bulk -j ${PREHEAT_POUDRIERE_JAILNAME} -p ${PREHEAT_POUDRIERE_PTNAME} -f pkglist.bootstrap
 
 ## fetch each origin from pkglist
 while read -r _origin; do
