@@ -11,6 +11,9 @@ NANO_WORLDDIR="${WRKDIR}/world"
 # Comment this out if /usr/obj is a symlink
 # CPIO_SYMLINK=--insecure
 
+# Use a custom pool name
+ZFS_POOL_NAME="rpool"
+
 _zfs_populate_cfg()
 {
 	if [ -d "${SAVED_PWD}/cfg" ]; then
