@@ -71,6 +71,8 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
           fetch -o - https://srv/router.be.zfs.xz | unxz | bectl import newbe
 
+      > TODO: When testing, upgrading from 11.4 to 13.0, an upgrade to the ESP was required, it should also include an upgrade to `/boot/efi`.
+
    4. Boot once
 
           bectl activate -t newbe
