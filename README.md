@@ -6,9 +6,9 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 ## Create a new router image
 
-1. Create a poudriere jail with a GENERIC kernel
+1. Create a poudriere jail
 
-       poudriere jail -c -j router -v 13.0-RELEASE -K GENERIC
+       poudriere jail -c -j router -v 13.0-RELEASE
 
 2. Create a ports tree
 
