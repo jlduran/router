@@ -91,6 +91,10 @@ In order to save configuration changes, issue the following command:
 
 Configuration changes are then saved to `/cfg`, to overlay the base `/etc` template (NanoBSD-style).
 
+## To do
+
+- [ ] Add a `VARIANT` and a `VARIANT_ID` to /var/run/os-release
+
 [BSD Router Project]: https://bsdrp.net/
 [NanoBSD]: https://papers.freebsd.org/2005/phk-nanobsd/
 [ZFS Magic Upgrades]: https://papers.freebsd.org/2019/fosdem/jude-zfs_upgrades/
