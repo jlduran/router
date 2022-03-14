@@ -100,6 +100,13 @@ _zfs_setup_nanobsd_etc()
 	# XXX Already in overlaydir/etc
 	# Create directory for eventual /usr/local/etc contents
 	mkdir -p etc/local
+
+	# Append os-release info
+	cat <<-EOF > etc/os-release
+	BUILD_ID=$(git describe --tags)
+	VARIANT=Router
+	VARIANT_ID=router
+	EOF
 	)
 }
 
