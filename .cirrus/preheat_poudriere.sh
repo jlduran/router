@@ -2,7 +2,7 @@
 
 # Pre-heat Poudriere
 #
-# Download pre-built packages to avoid timeouts and speed up the process.
+# Download pre-built packages to avoid CI timeouts and speed up the process.
 
 PREHEAT_FREEBSD_VERSION="13"
 PREHEAT_ARCH="amd64"
@@ -10,12 +10,21 @@ PREHEAT_POUDRIERE_JAILNAME="router"
 PREHEAT_POUDRIERE_PTNAME="quarterly"
 PREHEAT_PYTHON_SUFFIX="py38"
 
+full_pkglist="$(mktemp pkglist.XXXXXX)"
+
 _XXX_patch_poudriere()
 {
 	fetch -o /usr/local/share/poudriere/image_zfs.sh https://raw.githubusercontent.com/freebsd/poudriere/master/src/share/poudriere/image_zfs.sh
 }
 
-_preheat_fetch_deps()
+_preheat_add_pkg_to_full_pkglist()
+{
+	_origin="$1"
+
+	echo "$_origin" >> "$full_pkglist"
+}
+
+_preheat_process_deps()
 {
 	_origin="$1"
 
@@ -25,8 +34,8 @@ _preheat_fetch_deps()
 			continue
 		fi
 
-		_preheat_fetch_pkg "$_origin_dep"
-		_preheat_fetch_deps "$_origin_dep"
+		_preheat_add_pkg_to_full_pkglist "$_origin_dep"
+		_preheat_process_deps "$_origin_dep"
 	done
 }
 
@@ -52,8 +61,9 @@ _preheat_fetch_pkg()
 _preheat_origin_get_deps_origin()
 {
 	_origin="$1"
+	_origin="$(_preheat_fix_origin "$_origin")"
 
-	_name="$(_preheat_python_suffix "$_origin")"
+	_name="$(_preheat_get_name "$_origin")"
 
 	jq --arg origin "$_origin" --arg name "$_name" 'select(.origin == $origin) | select(.name == $name) | .deps | .[]? | .origin' packagesite.yaml | tr -d '"'
 }
@@ -62,30 +72,50 @@ _preheat_origin_get_path()
 {
 	_origin="$1"
 
-	_name="$(_preheat_python_suffix "$_origin")"
+	_name="$(_preheat_get_name "$_origin")"
+	_origin="$(_preheat_fix_origin "$_origin")"
 
 	jq --arg origin "$_origin" --arg name "$_name" 'select(.origin == $origin) | select(.name == $name) | .path' packagesite.yaml | tr -d '"'
 }
 
-_preheat_python_suffix()
+_preheat_get_name()
 {
 	_origin="$1"
 
-	echo "${_origin##*/}" | sed "s/py-/${PREHEAT_PYTHON_SUFFIX}-/g"
+	echo "${_origin##*/}" | sed -e "s/py-/${PREHEAT_PYTHON_SUFFIX}-/g" -e "s/\@/-/g"
+}
+
+_preheat_fix_origin()
+{
+	_origin="$1"
+
+	echo "${_origin}" | sed -e "s/\@.*//g"
 }
 
 # Pre-heat
 #
 _XXX_patch_poudriere
-_preheat_fetch_packagesite
 
 ## bootstrap pkg
 ## XXX pre-heat this as well
+_preheat_fetch_packagesite
+
 echo "ports-mgmt/pkg" > pkglist.bootstrap
 poudriere bulk -j ${PREHEAT_POUDRIERE_JAILNAME} -p ${PREHEAT_POUDRIERE_PTNAME} -f pkglist.bootstrap
 
-## fetch each origin from pkglist
+## build the full package list from pkglist
+echo "Building full package list.."
 while read -r _origin; do
-	_preheat_fetch_pkg "$_origin"
-	_preheat_fetch_deps "$_origin"
+	_preheat_add_pkg_to_full_pkglist "$_origin"
+	_preheat_process_deps "$_origin"
 done < ${CIRRUS_WORKING_DIR}/pkglist
+
+## fetch each pkg from pkglist
+echo "Fetching full package list.."
+for _origin in $(sort -u "$full_pkglist"); do
+	_preheat_fetch_pkg "$_origin"
+done
+
+## cleanup
+## XXX trap this
+rm -f "$full_pkglist" pkglist.bootstrap packagesite.txz packagesite.yaml
