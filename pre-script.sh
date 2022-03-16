@@ -15,6 +15,43 @@ NANO_WORLDDIR="${WRKDIR}/world"
 ZFS_POOL_NAME="zroot"
 TMP_ZFS_POOL_NAME="tmpzroot.$(jot -r 1 1000000000)"
 
+# XXX override in the meantime (not yet upstreamed)
+make_esp_file() {
+    local file size loader device stagedir fatbits efibootname
+
+    msg "Creating ESP image"
+    file=$1
+    size=$2
+    loader=$3
+    fat32min=33
+    fat16min=2
+
+    if [ "$size" -ge "$fat32min" ]; then
+        fatbits=32
+    elif [ "$size" -ge "$fat16min" ]; then
+        fatbits=16
+    else
+        fatbits=12
+    fi
+
+    stagedir=$(mktemp -d /tmp/stand-test.XXXXXX)
+    mkdir -p "${stagedir}/EFI/BOOT"
+    mkdir -p "${stagedir}/EFI/FreeBSD"
+    efibootname=$(get_uefi_bootname)
+    cp "${loader}" "${stagedir}/EFI/BOOT/${efibootname}.efi"
+    cp "${loader}" "${stagedir}/EFI/FreeBSD/loader.efi"
+    makefs -t msdos \
+	-o fat_type=${fatbits} \
+	-o OEM_string="" \
+	-o sectors_per_cluster=1 \
+	-o volume_label=EFISYS \
+	-s ${size}m \
+	"${file}" "${stagedir}" \
+	>/dev/null 2>&1
+    rm -rf "${stagedir}"
+    msg "ESP Image created"
+}
+
 _zfs_populate_cfg()
 {
 	if [ -d "${SAVED_PWD}/cfg" ]; then
@@ -76,7 +113,7 @@ _zfs_setup_nanobsd()
 	echo "$NANO_RAM_TMPVARSIZE" > conf/base/var/md_size
 
 	# pick up config files from the special partition
-	echo "mount -t zfs ${ZFS_POOL_NAME}/cfg" > conf/default/etc/remount
+	echo "mount -o ro -t zfs ${ZFS_POOL_NAME}/cfg" > conf/default/etc/remount
 
 	# Put /tmp on the /var ramdisk (could be symlink already)
 	_zfs_tgt_dir2symlink tmp var/tmp
@@ -89,17 +126,23 @@ _zfs_setup_nanobsd_etc()
 	(
 	cd "${NANO_WORLDDIR}"
 
-	# XXX Already in overlaydir/etc
 	# create diskless marker file
-	#touch etc/diskless
+	touch etc/diskless
 
-	# XXX Do not make the root filesystem R/O
-	# Make root filesystem R/O by default
-	#echo "root_rw_mount=NO" >> etc/defaults/rc.conf
+	# make root filesystem R/O by default
+	sysrc -f etc/defaults/vendor.conf "root_rw_mount=NO"
+	# Disable entropy file, since / is read-only /var/db/entropy should be enough?
+	sysrc -f etc/defaults/vendor.conf "entropy_file=NO"
 
-	# XXX Already in overlaydir/etc
+	echo "${ZFS_POOL_NAME}/cfg		/cfg		zfs	rw,noatime,noauto	0	0" >> etc/fstab
+	mkdir -p cfg
+
 	# Create directory for eventual /usr/local/etc contents
 	mkdir -p etc/local
+
+	# Add some first boot empty files
+	touch etc/opiekeys
+	touch etc/zfs/exports
 	)
 }
 
@@ -108,9 +151,9 @@ zfs_prepare()
 	truncate -s ${IMAGESIZE} ${WRKDIR}/raw.img
 	md=$(/sbin/mdconfig ${WRKDIR}/raw.img)
 	zroot=${ZFS_POOL_NAME}
+	tmpzroot=${TMP_ZFS_POOL_NAME}
 
 	msg "Creating temporary ZFS pool"
-	tmpzroot=${TMP_ZFS_POOL_NAME}
 	zpool create \
 		-O mountpoint=/${ZFS_POOL_NAME} \
 		-O canmount=noauto \
@@ -127,7 +170,6 @@ zfs_prepare()
 		msg "Creating ZFS Datasets"
 		zfs create -o mountpoint=none ${tmpzroot}/${ZFS_BEROOT_NAME}
 		zfs create -o mountpoint=/ ${tmpzroot}/${ZFS_BEROOT_NAME}/${ZFS_BOOTFS_NAME}
-		zfs create -o mountpoint=/cfg ${tmpzroot}/cfg
 		# XXX Put /tmp on the /var ramdisk
 		#zfs create -o mountpoint=/tmp -o exec=on -o setuid=off ${tmpzroot}/tmp
 		zfs create -o mountpoint=/usr -o canmount=off ${tmpzroot}/usr
@@ -143,15 +185,29 @@ zfs_prepare()
 		#zfs create -o atime=on ${tmpzroot}/var/mail
 		#zfs create -o setuid=off ${tmpzroot}/var/tmp
 		#chmod 1777 ${WRKDIR}/world/tmp ${WRKDIR}/world/var/tmp
+
+		# Create and mount /cfg so it can be populated
+		zfs create -o mountpoint=legacy ${tmpzroot}/cfg
+		mkdir -p ${WRKDIR}/world/cfg
+		mount -t zfs ${tmpzroot}/cfg ${WRKDIR}/world/cfg
+
+		# Create additional datasets to be used by jails and VMs
+		zfs create -o mountpoint=/usr/freebsd-dist ${tmpzroot}/usr/freebsd-dist
+		zfs create -o mountpoint=/jail ${tmpzroot}/jail
+		zfs create -o mountpoint=/vm ${tmpzroot}/vm
 	fi
 }
 
 zfs_build()
 {
 	if [ -z "${ORIGIN_IMAGE}" ]; then
+		cat >> ${WRKDIR}/world/etc/fstab <<-EOEFI
+		# Device		Mountpoint	FStype	Options			Dump	Pass#
+		/dev/gpt/efiboot0	/boot/efi	msdosfs	rw,noatime,noauto	2	2
+		EOEFI
 		if [ -n "${SWAPSIZE}" -a "${SWAPSIZE}" != "0" ]; then
 			cat >> ${WRKDIR}/world/etc/fstab <<-EOSWAP
-			/dev/gpt/swap0.eli	none			swap	sw,late		0	0
+			/dev/gpt/swap0.eli	none		swap	sw,late			0	0
 			EOSWAP
 		fi
 
@@ -163,12 +219,8 @@ zfs_build()
 		_zfs_populate_cfg
 		_zfs_setup_nanobsd
 
-		# XXX Created in overlay
-		# XXX Missing empty files
-		#mkdir -p ${WRKDIR}/world/etc/zfs
-		#touch ${WRKDIR}/world/etc/zfs/exports
-		#touch ${WRKDIR}/world/etc/opiekeys
-		#chmod 0600 ${WRKDIR}/world/etc/opiekeys
+		# Make sure that firstboot scripts run so growfs works.
+		touch ${NANO_WORLDDIR}/firstboot
 	fi
 }
 

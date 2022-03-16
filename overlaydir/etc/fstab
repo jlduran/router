@@ -1,2 +1,0 @@
-# Device		Mountpoint		FStype	Options		Dump	Pass#
-/dev/gpt/efiboot0	/boot/efi		msdosfs	rw		2	2

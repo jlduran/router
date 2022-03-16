@@ -30,6 +30,8 @@
 
 set -e
 
+trap "umount /cfg" 1 2 15 EXIT
+mount /cfg
 (
 cd /etc
 for filename in "$@" `find * -type f`
@@ -42,7 +44,7 @@ do
 		# then check if this file is exactly the same as original file
 		# in nanobsd image
 		#
-		if ! cmp -s /etc/$filename /conf/base/etc/$filename 
+		if ! cmp -s /etc/$filename /conf/base/etc/$filename
 		then
 			file_path=`echo "$filename" | sed 's/\/[^/]*$//'`
 			if [ $file_path != $filename ]
@@ -61,7 +63,7 @@ do
 			# Add to cfg (y/n/i)?
 			#	y) -> save this file in /cfg
 			#	n) -> do not save this file in /cfg for current script invocation ONLY
-			#	i) -> add file to ignore list (/cfg/.ignore hiereachy) and never save
+			#	i) -> add file to ignore list (/cfg/.ignore hierarchy) and never save
 			#	      try to add this file to /cfg.
 			#
 			# touch is used to add files to /cfg to keep the script flow straight and easy
@@ -96,7 +98,7 @@ for filename in "$@" `find * -type f`
 do
 	if [ -f /etc/$filename ]
 	then
-        	cmp -s /etc/$filename /cfg/$filename || cp -pfv /etc/$filename /cfg/$filename
+		cmp -s /etc/$filename /cfg/$filename || cp -pfv /etc/$filename /cfg/$filename
 	else
 
 		#
@@ -112,3 +114,5 @@ do
 done
 
 )
+umount /cfg
+trap 1 2 15 EXIT
