@@ -94,6 +94,9 @@ Configuration changes are then saved to `/cfg`, to overlay the base `/etc` templ
 ## To do
 
 - [ ] Add a `VARIANT` and a `VARIANT_ID` to /var/run/os-release
+- [ ] No-priv build
+- [ ] /boot/efi capsule upgrades
+- [ ] Document incremental snapshots (BE)
 
 [BSD Router Project]: https://bsdrp.net/
 [NanoBSD]: https://papers.freebsd.org/2005/phk-nanobsd/
