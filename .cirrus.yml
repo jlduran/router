@@ -5,7 +5,7 @@ poudriere_task:
     PORTS_BRANCH: 2022Q1
 
   freebsd_instance:
-    image_family: freebsd-14-0-snap
+    image_family: freebsd-13-0
 
   install_dependencies_script:
     - pkg install -y git poudriere-devel jq
