@@ -13,7 +13,7 @@ NANO_WORLDDIR="${WRKDIR}/world"
 
 # Use a standard pool name
 ZFS_POOL_NAME="zroot"
-TMP_ZFS_POOL_NAME="tmpzroot.$(jot -r 1 1000000000)"
+TMP_ZFS_POOL_NAME="${ZFS_POOL_NAME}.$(jot -r 1 1000000000)"
 
 # XXX override in the meantime (not yet upstreamed)
 make_esp_file() {
