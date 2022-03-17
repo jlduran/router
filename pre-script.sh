@@ -1,10 +1,10 @@
 #!/bin/sh
 
-# Size of the /etc ramdisk in 512 bytes sectors
-NANO_RAM_ETCSIZE=20480
+# Size of the /etc ramdisk
+NANO_RAM_ETCSIZE="32m"
 
-# Size of the /tmp+/var ramdisk in 512 bytes sectors
-NANO_RAM_TMPVARSIZE=20480
+# Size of the /tmp+/var ramdisk
+NANO_RAM_TMPVARSIZE="32m"
 
 NANO_WORLDDIR="${WRKDIR}/world"
 
