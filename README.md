@@ -34,7 +34,7 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 6. Test the image
 
-       sh /usr/share/examples/bhyve/vmrun.sh -uE -m 1G -n e1000 -t tap0 -t tap1 \
+       sh /usr/share/examples/bhyve/vmrun.sh -uE -m 4G -n e1000 -t tap0 -t tap1 \
            -d /usr/local/poudriere/data/images/router.img router
 
 ## Upgrade a router image (new boot environment)
@@ -68,7 +68,7 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
    2. Start a VM with the old image
 
-          sh /usr/share/examples/bhyve/vmrun.sh -uE -m 1G -n e1000 -t tap0 -t tap1 \
+          sh /usr/share/examples/bhyve/vmrun.sh -uE -m 4G -n e1000 -t tap0 -t tap1 \
               -d /usr/local/poudriere/data/images/router.img router
 
    3. From the router, import the new BE
