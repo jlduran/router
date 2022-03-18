@@ -29,11 +29,13 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 5. Create the router image
 
-       poudriere image -t zfs -j router -s 4g -p quarterly -h router.home -n router -f pkglist -c overlaydir -B pre-script.sh -b -w 2g
+       poudriere image -t zfs -j router -s 4g -p quarterly -h router.home -n router -f pkglist \
+           -c overlaydir -B pre-script.sh
 
 6. Test the image
 
-       sh /usr/share/examples/bhyve/vmrun.sh -uE -m 1G -n e1000 -t tap0 -t tap1 -d /usr/local/poudriere/data/images/router.img router
+       sh /usr/share/examples/bhyve/vmrun.sh -uE -m 1G -n e1000 -t tap0 -t tap1 \
+           -d /usr/local/poudriere/data/images/router.img router
 
 ## Upgrade a router image (new boot environment)
 
@@ -55,7 +57,8 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 5. Create a router boot environment (BE)
 
-       poudriere image -t zfs+send+be -j router -s 4g -p quarterly -h router.home -n router -f pkglist -c overlaydir -B pre-script.sh -b -w 2g
+       poudriere image -t zfs+send+be -j router -s 4g -p quarterly -h router.home -n router -f pkglist \
+           -c overlaydir -B pre-script.sh
 
 6. Test the BE image:
 
@@ -65,7 +68,8 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
    2. Start a VM with the old image
 
-          sh /usr/share/examples/bhyve/vmrun.sh -uE -m 1G -n e1000 -t tap0 -t tap1 -d /usr/local/poudriere/data/images/router.img router
+          sh /usr/share/examples/bhyve/vmrun.sh -uE -m 1G -n e1000 -t tap0 -t tap1 \
+              -d /usr/local/poudriere/data/images/router.img router
 
    3. From the router, import the new BE
 

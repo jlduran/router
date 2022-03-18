@@ -21,10 +21,10 @@ poudriere_task:
     - poudriere bulk -j router -p quarterly -f pkglist
 
   create_router_image_script:
-    - poudriere image -t zfs -j router -s 4g -p quarterly -h router.home -n router -f pkglist -c overlaydir -B pre-script.sh -b -w 2g
+    - poudriere image -t zfs -j router -s 4g -p quarterly -h router.home -n router -f pkglist -c overlaydir -B pre-script.sh
 
   create_router_be_script:
-    - poudriere image -t zfs+send+be -j router -s 4g -p quarterly -h router.home -n router -f pkglist -c overlaydir -B pre-script.sh -b -w 2g
+    - poudriere image -t zfs+send+be -j router -s 4g -p quarterly -h router.home -n router -f pkglist -c overlaydir -B pre-script.sh
 
   prepare_artifacts_script:
     - mkdir $CIRRUS_WORKING_DIR/router
