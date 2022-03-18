@@ -12,7 +12,8 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 2. Create a ports tree
 
-       poudriere ports -c -U https://git.freebsd.org/ports.git -B <quarterly branch> -p quarterly
+       poudriere ports -c -U https://git.freebsd.org/ports.git -B <quarterly branch> \
+           -p quarterly
 
 3. Create/modify the list of ports to be included
 
@@ -29,8 +30,8 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 5. Create the router image
 
-       poudriere image -t zfs -j router -s 4g -p quarterly -h router.home -n router -f pkglist \
-           -c overlaydir -B pre-script.sh
+       poudriere image -t zfs -j router -s 4g -p quarterly -h router.home -n router \
+           -f pkglist -c overlaydir -B pre-script.sh
 
 6. Test the image
 
@@ -49,7 +50,8 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
    or create an updated ports tree
 
-       poudriere ports -c -U https://git.freebsd.org/ports.git -B <new quarterly branch> -p quarterly
+       poudriere ports -c -U https://git.freebsd.org/ports.git -B <new quarterly branch> \
+           -p quarterly
 
 4. Build the ports
 
@@ -57,8 +59,8 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 5. Create a router boot environment (BE)
 
-       poudriere image -t zfs+send+be -j router -s 4g -p quarterly -h router.home -n router -f pkglist \
-           -c overlaydir -B pre-script.sh
+       poudriere image -t zfs+send+be -j router -s 4g -p quarterly -h router.home -n router \
+           -f pkglist -c overlaydir -B pre-script.sh
 
 6. Test the BE image:
 
@@ -74,8 +76,6 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
    3. From the router, import the new BE
 
           fetch -o - https://srv/router.be.zfs.xz | unxz | bectl import newbe
-
-      > TODO: When testing, upgrading from 11.4 to 13.0, an upgrade to the ESP was required, it should also include an upgrade to `/boot/efi`.
 
    4. Boot once
 
@@ -101,6 +101,7 @@ Configuration changes are then saved to `/cfg`, to overlay the base `/etc` templ
 - [ ] No-priv build
 - [ ] /boot/efi capsule upgrades
 - [ ] Document incremental snapshots (BE)
+- [ ] Adapt some scripts from BSDRP
 
 [BSD Router Project]: https://bsdrp.net/
 [NanoBSD]: https://papers.freebsd.org/2005/phk-nanobsd/
