@@ -17,39 +17,39 @@ TMP_ZFS_POOL_NAME="${ZFS_POOL_NAME}.$(jot -r 1 1000000000)"
 
 # XXX override in the meantime (not yet upstreamed)
 make_esp_file() {
-    local file size loader device stagedir fatbits efibootname
+	local file size loader device stagedir fatbits efibootname
 
-    msg "Creating ESP image"
-    file=$1
-    size=$2
-    loader=$3
-    fat32min=33
-    fat16min=2
+	msg "Creating ESP image"
+	file=$1
+	size=$2
+	loader=$3
+	fat32min=33
+	fat16min=2
 
-    if [ "$size" -ge "$fat32min" ]; then
-        fatbits=32
-    elif [ "$size" -ge "$fat16min" ]; then
-        fatbits=16
-    else
-        fatbits=12
-    fi
+	if [ "$size" -ge "$fat32min" ]; then
+		fatbits=32
+	elif [ "$size" -ge "$fat16min" ]; then
+		fatbits=16
+	else
+		fatbits=12
+	fi
 
-    stagedir=$(mktemp -d /tmp/stand-test.XXXXXX)
-    mkdir -p "${stagedir}/EFI/BOOT"
-    mkdir -p "${stagedir}/EFI/FreeBSD"
-    efibootname=$(get_uefi_bootname)
-    cp "${loader}" "${stagedir}/EFI/BOOT/${efibootname}.efi"
-    cp "${loader}" "${stagedir}/EFI/FreeBSD/loader.efi"
-    makefs -t msdos \
-	-o fat_type=${fatbits} \
-	-o OEM_string="" \
-	-o sectors_per_cluster=1 \
-	-o volume_label=EFISYS \
-	-s ${size}m \
-	"${file}" "${stagedir}" \
-	>/dev/null 2>&1
-    rm -rf "${stagedir}"
-    msg "ESP Image created"
+	stagedir=$(mktemp -d /tmp/stand-test.XXXXXX)
+	mkdir -p "${stagedir}/EFI/BOOT"
+	mkdir -p "${stagedir}/EFI/FreeBSD"
+	efibootname=$(get_uefi_bootname)
+	cp "${loader}" "${stagedir}/EFI/BOOT/${efibootname}.efi"
+	cp "${loader}" "${stagedir}/EFI/FreeBSD/loader.efi"
+	makefs -t msdos \
+	    -o fat_type=${fatbits} \
+	    -o OEM_string="" \
+	    -o sectors_per_cluster=1 \
+	    -o volume_label=EFISYS \
+	    -s ${size}m \
+	    "${file}" "${stagedir}" \
+	    >/dev/null 2>&1
+	rm -rf "${stagedir}"
+	msg "ESP Image created"
 }
 
 _zfs_populate_cfg()
@@ -156,13 +156,13 @@ zfs_prepare()
 
 	msg "Creating temporary ZFS pool"
 	zpool create \
-		-O mountpoint=/${ZFS_POOL_NAME} \
-		-O canmount=noauto \
-		-O checksum=sha512 \
-		-O compression=on \
-		-O atime=off \
-		-t ${tmpzroot} \
-		-R ${WRKDIR}/world ${zroot} /dev/${md} || exit
+	    -O mountpoint=/${ZFS_POOL_NAME} \
+	    -O canmount=noauto \
+	    -O checksum=sha512 \
+	    -O compression=on \
+	    -O atime=off \
+	    -t ${tmpzroot} \
+	    -R ${WRKDIR}/world ${zroot} /dev/${md} || exit
 
 	if [ -n "${ORIGIN_IMAGE}" ]; then
 		msg "Importing previous ZFS Datasets"
