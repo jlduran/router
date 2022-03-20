@@ -16,7 +16,7 @@ ZFS_POOL_NAME="zroot"
 TMP_ZFS_POOL_NAME="${ZFS_POOL_NAME}.$(jot -r 1 1000000000)"
 
 # XXX use this in the meantime efi_rng gets MFCd
-make_entropy_file() {
+make_entropy_seeds() {
 	umask 077
 	for i in /entropy /boot/entropy; do
 		i="${NANO_WORLDDIR}/$i"
@@ -140,8 +140,6 @@ _zfs_setup_nanobsd_etc()
 
 	# make root filesystem R/O by default
 	sysrc -f etc/defaults/vendor.conf "root_rw_mount=NO"
-	# Disable entropy file, since / is read-only /var/db/entropy should be enough?
-	sysrc -f etc/defaults/vendor.conf "entropy_file=NO"
 
 	echo "${ZFS_POOL_NAME}/cfg		/cfg		zfs	rw,noatime,noauto	0	0" >> etc/fstab
 	mkdir -p cfg
@@ -228,7 +226,7 @@ zfs_build()
 		_zfs_setup_nanobsd_etc
 		_zfs_populate_cfg
 		_zfs_setup_nanobsd
-		make_entropy_file
+		make_entropy_seeds
 
 		# Make sure that firstboot scripts run so growfs works.
 		touch ${NANO_WORLDDIR}/firstboot
