@@ -187,7 +187,7 @@ zfs_prepare()
 		#chmod 1777 ${WRKDIR}/world/tmp ${WRKDIR}/world/var/tmp
 
 		# Create and mount /cfg so it can be populated
-		zfs create -o mountpoint=legacy ${tmpzroot}/cfg
+		zfs create -o mountpoint=legacy -o exec=off -o setuid=off ${tmpzroot}/cfg
 		mkdir -p ${WRKDIR}/world/cfg
 		mount -t zfs ${tmpzroot}/cfg ${WRKDIR}/world/cfg
 
