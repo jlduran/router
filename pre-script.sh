@@ -17,23 +17,22 @@ TMP_ZFS_POOL_NAME="${ZFS_POOL_NAME}.$(jot -r 1 1000000000)"
 
 # XXX override in the meantime (not yet upstreamed)
 make_esp_file() {
-	local file size loader device stagedir fatbits efibootname
-
-	msg "Creating ESP image"
+	local file size loader stagedir fatbits efibootname
 	file=$1
 	size=$2
 	loader=$3
-	fat32min=33
-	fat16min=2
+	FAT16MIN=2
+	FAT32MIN=33
 
-	if [ "$size" -ge "$fat32min" ]; then
+	if [ "$size" -ge "$FAT32MIN" ]; then
 		fatbits=32
-	elif [ "$size" -ge "$fat16min" ]; then
+	elif [ "$size" -ge "$FAT16MIN" ]; then
 		fatbits=16
 	else
 		fatbits=12
 	fi
 
+	msg "Creating ESP image"
 	stagedir=$(mktemp -d /tmp/stand-test.XXXXXX)
 	mkdir -p "${stagedir}/EFI/BOOT"
 	mkdir -p "${stagedir}/EFI/FreeBSD"
@@ -206,7 +205,7 @@ zfs_build()
 		# Device		Mountpoint	FStype	Options			Dump	Pass#
 		/dev/gpt/efiboot0	/boot/efi	msdosfs	rw,noatime,noauto	2	2
 		EOEFI
-		if [ -n "${SWAPSIZE}" -a "${SWAPSIZE}" != "0" ]; then
+		if [ -n "${SWAPSIZE}" ] && [ "${SWAPSIZE}" != "0" ]; then
 			cat >> ${WRKDIR}/world/etc/fstab <<-EOSWAP
 			/dev/gpt/swap0.eli	none		swap	sw,late			0	0
 			EOSWAP
