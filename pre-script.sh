@@ -19,7 +19,7 @@ TMP_ZFS_POOL_NAME="${ZFS_POOL_NAME}.$(jot -r 1 1000000000)"
 make_entropy_seeds() {
 	umask 077
 	for i in /entropy /boot/entropy; do
-		i="${NANO_WORLDDIR}/$i"
+		i="${NANO_WORLDDIR}${i}"
 		dd if=/dev/random of="$i" bs=4096 count=1
 		chown 0:0 "$i"
 	done
