@@ -151,6 +151,9 @@ _zfs_setup_nanobsd_etc()
 	touch etc/opiekeys
 	chmod 0600 etc/opiekeys
 	touch etc/zfs/exports
+
+	# Remove poudriere-populated rc.conf
+	rm -f etc/rc.conf
 	)
 }
 

@@ -30,7 +30,7 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 5. Create the router image
 
-       poudriere image -t zfs -j router -s 4g -p quarterly -h router.home -n router \
+       poudriere image -t zfs -j router -s 4g -p quarterly -n router \
            -f pkglist -c overlaydir -B pre-script.sh
 
 6. Test the image
@@ -59,7 +59,7 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 5. Create a router boot environment (BE)
 
-       poudriere image -t zfs+send+be -j router -s 4g -p quarterly -h router.home -n router \
+       poudriere image -t zfs+send+be -j router -s 4g -p quarterly -n router \
            -f pkglist -c overlaydir -B pre-script.sh
 
 6. Test the BE image:
