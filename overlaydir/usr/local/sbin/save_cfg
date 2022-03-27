@@ -30,13 +30,48 @@
 
 set -e
 
-trap "umount /cfg" 1 2 15 EXIT
+archive_rollback()
+{
+	timestamp="$(date +%s)"
+	zfs rename -r zroot/cfg@rollback zroot/cfg@"${timestamp}"
+
+	# Prune old archives, keeping a maximum of max_archives - 1
+	max_archives=5
+	archives="$(zfs list -HS creation -t snapshot zroot/cfg | awk '! /rollback|router/ {print $1}')"
+	for archive in $archives
+	do
+		max_archives=$(( max_archives - 1 ))
+		[ $max_archives -gt 0 ] || zfs destroy -R "$archive"
+	done
+}
+
+rollback()
+{
+	zfs rollback -Rf zroot/cfg@rollback
+	# TODO copy from /cfg to /etc
+	# reapply rc.initdiskless
+}
+
+snapshot()
+{
+	# Check if snapshot "rollback" already exists.
+	# If it does, archive it.
+	zfs list -Ht snapshot zroot/cfg@rollback >/dev/null 2>&1 &&
+	    archive_rollback
+
+	# Create "rollback" snapshot
+	zfs snapshot -r zroot/cfg@rollback
+}
+
+trap rollback HUP INT TERM
+# TODO lockf
+snapshot
 mount /cfg
 (
 cd /etc
-for filename in "$@" `find * -type f`
+for filename in "$@" $(find * -type f)
 do
-	if [ ! -f /cfg/$filename -a ! -f /cfg/.ignore/$filename ]
+	if [ ! -f /cfg/"$filename" ] && [ ! -f /cfg/.ignore/"$filename" ]
 	then
 
 		#
@@ -44,17 +79,16 @@ do
 		# then check if this file is exactly the same as original file
 		# in nanobsd image
 		#
-		if ! cmp -s /etc/$filename /conf/base/etc/$filename
+		if ! cmp -s /etc/"$filename" /conf/base/etc/"$filename"
 		then
-			file_path=`echo "$filename" | sed 's/\/[^/]*$//'`
-			if [ $file_path != $filename ]
+			file_path=$(dirname "$filename")
+			if [ "$file_path" != "$filename" ]
 			then
-				if [ ! -d /etc/$file_path ]
+				if [ ! -d /etc/"$file_path" ]
 				then
-					# should never go here unless we have some errors in
-					# sed script extracting file path
-					echo "Error: Path /etc/$file_path is not directory."
+					echo "Error: Path /etc/$file_path is not a directory."
 					exit 1;
+					# NOTREACHED
 				fi
 			fi
 
@@ -71,19 +105,19 @@ do
 			read -p "New file /etc/$filename found. Add to /cfg (y/n/i)? " key
 			case "$key" in
 			[yY])
-				if [ $file_path != $filename ]
+				if [ "$file_path" != "$filename" ]
 				then
-					mkdir -vp /cfg/$file_path
+					mkdir -vp /cfg/"$file_path"
 				fi
-				touch /cfg/$filename && echo "File /etc/$filename added to /cfg."
+				touch /cfg/"$filename" && echo "File /etc/$filename added to /cfg."
 				;;
 			[iI])
 				mkdir -vp /cfg/.ignore
-				if [ $file_path != $filename ]
+				if [ "$file_path" != "$filename" ]
 				then
-					mkdir -vp /cfg/.ignore/$file_path
+					mkdir -vp /cfg/.ignore/"$file_path"
 				fi
-				touch /cfg/.ignore/$filename && echo "File /etc/$filename added to ignore list."
+				touch /cfg/.ignore/"$filename" && echo "File /etc/$filename added to ignore list."
 				;;
 			esac
 		fi
@@ -94,11 +128,11 @@ done
 # Actually check all files in /cfg and save if necessary
 #
 cd /cfg
-for filename in "$@" `find * -type f`
+for filename in "$@" $(find * -type f)
 do
-	if [ -f /etc/$filename ]
+	if [ -f /etc/"$filename" ]
 	then
-		cmp -s /etc/$filename /cfg/$filename || cp -pfv /etc/$filename /cfg/$filename
+		cmp -s /etc/"$filename" /cfg/"$filename" || cp -pfv /etc/"$filename" /cfg/"$filename"
 	else
 
 		#
@@ -107,12 +141,10 @@ do
 		read -p "File /cfg/$filename not found in /etc. Remove from /cfg (y/n)? " key
 		case "$key" in
 		[yY])
-			rm /cfg/$filename && echo "File /cfg/$filename removed"
+			rm /cfg/"$filename" && echo "File /cfg/$filename removed"
 			;;
 		esac
 	fi
 done
-
 )
 umount /cfg
-trap 1 2 15 EXIT
