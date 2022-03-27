@@ -33,16 +33,16 @@ set -e
 archive_rollback()
 {
 	timestamp="$(date +%s)"
-	zfs rename -r zroot/cfg@rollback zroot/cfg@"${timestamp}"
+	zfs rename -r zroot/cfg@rollback zroot/cfg@archive_"${timestamp}"
 
 	# Prune old archives, keeping a maximum of max_archives - 1
 	max_archives=5
-	archives="$(zfs list -HS creation -t snapshot zroot/cfg | awk '! /rollback|router/ {print $1}')"
-	for archive in $archives
-	do
-		max_archives=$(( max_archives - 1 ))
-		[ $max_archives -gt 0 ] || zfs destroy -R "$archive"
-	done
+	archives="$(zfs list -Hro name -S creation -t snapshot zroot/cfg | \
+	    grep archive)"
+	num_archives="$(echo "$archives" | wc -l)"
+	[ $num_archives -gt $max_archives ] &&
+	    echo "$archives" | tail -$(( num_archives - max_archives )) |
+	    xargs -L 1 zfs destroy -R
 }
 
 rollback()
