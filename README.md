@@ -101,7 +101,6 @@ Configuration changes are then saved to `/cfg`, to overlay the base `/etc` templ
 - [ ] No-priv build
 - [ ] /boot/efi capsule upgrades
 - [ ] Document incremental snapshots (BE)
-- [ ] Adapt some scripts from BSDRP
 
 [BSD Router Project]: https://bsdrp.net/
 [NanoBSD]: https://papers.freebsd.org/2005/phk-nanobsd/

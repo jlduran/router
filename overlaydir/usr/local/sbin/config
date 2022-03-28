@@ -1,0 +1,475 @@
+#!/bin/sh
+#
+# Copyright (c) 2009-2021, The BSDRP Development Team
+# All rights reserved.
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions
+# are met:
+# 1. Redistributions of source code must retain the above copyright
+#	 notice, this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#	 notice, this list of conditions and the following disclaimer in the
+#	 documentation and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
+# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+# SUCH DAMAGE.
+#
+
+# Strict script
+set -e
+
+# Global variables
+
+lock="/var/run/config.router.lock"
+
+# Checking if script is running inside a jail or not
+[ $(sysctl -n security.jail.jailed) -eq 0 ] && INSIDEJAIL=false || INSIDEJAIL=true
+
+# A useful function (from: http://code.google.com/p/sh-die/)
+die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
+
+# Display help
+usage () {
+	echo "Router Configuration Tool"
+	case "${SECOND_OPTION}" in
+	apply)
+		echo "Options for apply:"
+		echo " - secure timeout : Automatically rollback if the command confirm is not entered before timeout (in minutes)"
+		echo " - confirm : Must be entered for cancelling the auto rollback feature enabled with the secure command"
+		echo " - in timeout : Apply configuration after timeout (in minutes)"
+		echo " - at date/time : Apply configuration at date/time"
+		echo " - cancel : Cancel scheduled apply"
+		exit 0
+		;;
+	diff)
+		echo "Option for diff:"
+		echo " - quiet : Return 1 if changes found, 0 otherwise"
+		echo " - factory : compare against default configuration"
+		exit 0
+		;;
+	put)
+		echo "Options for put:"
+		echo " - scp username@host:[/path/filename]"
+		echo "	 send the configuration to a remote host"
+		echo "	 if no destination filename given, it will be named: hostname.tar.xz"
+		exit 0
+		;;
+	get)
+		echo "Options for get:"
+		echo " - scp username@host:/path/filename.tar.xz"
+		echo "	 retrieve the configuration from a remote host"
+		exit 0
+		;;
+	esac
+
+	# value $0 is the name of the called script
+	echo "Usage: $0 option"
+	echo "	- diff [quiet|factory]	  : Show diff between current and saved config"
+	echo "	- save	   : Save current config"
+	echo "	- apply    : Apply current config"
+	echo "	- rollback : Revert to previous config"
+	echo "	- put	   : Put the saved config to a remote server"
+	echo "	- get	   : Get config from remote server"
+	echo "	- factory  : Return to default configuration"
+	echo "	- help (h) [option]  : Display this help message. "
+	echo "	If [option] given, display more detail about the option"
+	exit 0
+}
+
+# Check if mounted
+# $1: volume to check
+# result: true or false
+is_mounted () {
+	[ -z "$1" ] && die "BUG: is_mounted() need argument"
+	mount | grep -q -e "[[:space:]]$1[[:space:]]" && return 0 || return 1
+}
+
+# Mount /cfg
+mount_cfg () {
+	# skip if inside a jail (always mounted)
+	(${INSIDEJAIL}) && return 0
+	# skip is already mounted
+	is_mounted /cfg && return 0
+	mount /cfg && return 0 || return 1
+}
+
+# Umount /cfg
+umount_cfg () {
+	# skip if inside a jail (always mounted)
+	(${INSIDEJAIL}) && return 0
+	umount /cfg || echo "WARNING: Can't umount /cfg"
+}
+
+# Create a snapshot of current /cfg
+archive_cfg () {
+	# TODO: No archive support inside a jail
+	(${INSIDEJAIL}) && return 0
+	echo "Archiving previous configuration files..."
+
+	# XXX zroot -> ${zroot}
+	if ! zfs snapshot zroot/cfg@rollback; then
+		echo "WARNING: Can't generate archive."
+	fi
+}
+
+# save configuration
+# TODO: Needs to backup /boot/loader.conf.d/*.conf in case of restoring
+#	configuration to other routers
+save_cfg () {
+	setlock (
+	mount_cfg || die "ERROR: Can't mount /cfg"
+	archive_cfg || echo "WARNING: Can't archive"
+	echo "Saving configuration..."
+
+	# XXX /usr/local/save_cfg
+	# setlock, archive (snapshot current config), save_cfg, release lock
+	(
+	cd /etc
+	# Looking for all regular files, symlinks AND directory in /etc
+	# symlinks can be created into /usr/local/etc/rc.d as example (multipe openvpn)
+	# directory because user can create empty directory and new one need to use
+	for i in "$@" $(find * \( -type d -o -type f -o -type l \) ! -path "cron/tabs"); do
+		if [ -d /etc/$i ] ; then
+			# Does this directory exist in reference configuration ?
+			if ! [ -d /conf/base/etc/$i ]; then
+				# Does this directory already saved ?
+				if ! [ -d /cfg/$i ]; then
+					# Need to give full parent path dir to tar for preserving owner
+					dir=""
+					full=""
+					for c in $(echo $i | tr "/" " "); do
+						[ -z "${dir}" ] && dir=$c || dir="${dir}/${c}"
+						full="$full $dir"
+					done
+					tar cf - ${full} -C /etc | tar xf - -C /cfg
+				fi
+			fi
+		elif [ -f /cfg/$i -o -h /cfg/$i ]; then
+			# If this file/symlink was previously saved, compare the saved-version (/cfg) and the running-version (/etc)
+			# Instruct cmp to not follow symbolic links, because some software (like freeradius)
+			# install symlink to /dev/random
+			if ! cmp -hs /etc/$i /cfg/$i || [ $(stat -f "%p%g%u" /etc/$i) != $(stat -f "%p%g%u" /cfg/$i) ]; then
+				cp -pfv /etc/$i /cfg/$i 2>/dev/null || echo "ERROR: failed to backup /etc/$i"
+			fi
+		else
+			# If this file was not previously saved, compare the running-version (/etc) and
+			# the default-version (/conf/base/etc)
+			if ! cmp -hs /conf/base/etc/$i /etc/$i || [ $(stat -f "%p%g%u" /conf/base/etc/$i) != $(stat -f "%p%g%u" /etc/$i) ]; then
+				# tar can preserve full parent path owners only if list of full path is given
+				# As example for file1 in etc/dir1/dir2/file1 we need to backup
+				#  etc/dir1 etc/dir1/dir2 etc/dir1/dir2/file1
+				dir=""
+				full=""
+				for c in $(echo $i | tr "/" " "); do
+					[ -z "${dir}" ] && dir=$c || dir="${dir}/${c}"
+					full="$full $dir"
+				done
+				tar cf - ${full} -C /etc | tar xf - -C /cfg
+			fi
+		fi
+	done
+	)
+
+	# Deleting file, symlink or directory in /cfg that are no more in /etc
+	(
+	cd /cfg
+	for i in "$@" $(find * \( -type d -o -type l -o -type f \)); do
+		[ -e /etc/$i ] || rm -rf /cfg/$i
+	done
+	)
+
+	umount_cfg
+	echo "Done."
+	logger Configuration saved
+	)
+	exit 0
+}
+
+# Apply configuration
+apply_cfg () {
+	echo "TO DO: Apply configuration"
+	case "$SECOND_OPTION" in
+	secure)
+		echo "TO DO: Apply config and rollback in $THIRD_OPTION minutes"
+		;;
+	confirm)
+		echo "TO DO: Cancel the auto-rollback introduce by the apply secure"
+		;;
+	in)
+		echo "TO DO: Apply config in $THIRD_OPTION minutes"
+		;;
+	at)
+		echo "TO DO: Apply config at $THIRD_OPTION date"
+		;;
+	cancel)
+		echo "TO DO: Cancel in and at apply"
+		;;
+	*)
+		echo "This function will force routing process to reload the configuration files"
+		;;
+	esac
+	exit 0
+}
+
+# Display diff between current and saved configuration
+# Return 0 if no diff found
+# Return 1 if diff found
+diff () {
+	# Don't know how to exchange variable with the subshell
+	# Then using a file in /tmp
+	[ -f /tmp/DIFF_FOUND ] && rm /tmp/DIFF_FOUND
+	[ -z "$SECOND_OPTION" ] && \
+		echo "Looking for differences between running and saved configuration files..."
+	if [ "$SECOND_OPTION" = "factory" ]; then
+		echo "Looking for differences between running and factory default configuration files..."
+		REFERENCE="/conf/base/etc"
+	else
+		REFERENCE="/cfg"
+		mount_cfg
+	fi
+	(
+	cd /etc
+	for i in "$@" $(find * -type f); do
+		if [ -f ${REFERENCE}/$i ]; then
+			if ! cmp -hs /etc/$i ${REFERENCE}/$i; then
+				echo "1" > /tmp/DIFF_FOUND
+				[ ! "$SECOND_OPTION" = "quiet" ] && find $i -print || break
+			fi
+		elif [ ! "$SECOND_OPTION" = "conf/base/etc" ]; then
+			if ! cmp -hs /conf/base/etc/$i /etc/$i; then
+				echo "1" > /tmp/DIFF_FOUND
+				[ ! "$SECOND_OPTION" = "quiet" ] && find $i -print || break
+			fi
+		fi
+	done
+	)
+	[ ! "$SECOND_OPTION" = "factory" ] && umount_cfg
+	if [ -f /tmp/DIFF_FOUND ]; then
+		rm /tmp/DIFF_FOUND || die "WARNING: Can't delete /tmp/DIFF_FOUND"
+		exit 1
+	else
+		[ ! "$SECOND_OPTION" = "quiet" ] && echo "None found."
+		exit 0
+	fi
+}
+
+# Rollback to previous configuration
+rollback () {
+	echo "Rollback the archived configuration"
+	mount_data || die "ERROR: Can't mount data, then can't retrieve archive file"
+	# Check if archive exist
+	if [ -f /data/archives/rollback.tar.xz ]; then
+		restore_cfg /data/archives/rollback.tar.xz /etc
+	else
+		echo "No archive file found."
+		echo "You need to save your configuration once before to rollback it"
+		umount_data
+		exit 1
+	fi
+	umount_data
+	echo "Done: You need to reload for applying changes."
+	exit 0
+}
+
+# Restore the ARCHIVE configuration to DEST
+# $1 = Source archive filename (.tar.xz)
+# $2 = Destination directory
+restore_cfg ( ) {
+	setlock
+	[ $# -lt 2 ] && die "BUG: restore_cfg(): not enough arguments"
+	[ -f $1 ] || die "ERROR: $1 doesn't exist or isn't a file"
+	[ -d $2 ] || die "ERROR: $2 doesn't exist or isn't a directory"
+	# Unzip the archive $1 to $2/
+	tar -x -C $2/ --exclude 'fstab' -f $1 || \
+		die "ERROR: untaring file failed."
+}
+
+# Send configuration to an git/scp server ?
+put () {
+	# option: protocol username@host:/path/[filename]
+	# example: scp admin@backup.host.fr:filename
+	HOST=$(hostname -s)
+	CONFIG_FILE="${HOST}.tar.xz"
+	case "$SECOND_OPTION" in
+	scp)
+		echo "Send saved configuration by SCP to ${THIRD_OPTION}"
+		if [ -f /tmp/${CONFIG_FILE} ]; then
+			rm /tmp/${CONFIG_FILE} || \
+				die "WARNING: Can't delete previous /tmp/${CONFIG_FILE}"
+		fi
+		mount_cfg
+		if ! tar -cJvpf /tmp/${CONFIG_FILE} -C /cfg/ . 2>/dev/null; then
+			umount_cfg
+			die "ERROR: Can't tar /cfg to /tmp/${CONFIG_FILE}"
+		fi
+		umount_cfg
+		scp /tmp/${CONFIG_FILE} ${THIRD_OPTION} || \
+			die "ERROR: Can't scp ${CONFIG_FILE} to ${THIRD_OPTION}"
+		if [ -f /tmp/${CONFIG_FILE} ]; then
+			rm /tmp/${CONFIG_FILE} || \
+				die "WARNING: Can't delete /tmp/${CONFIG_FILE}"
+		fi
+		;;
+	git)
+		echo "TO DO: Git commit to $THIRD_OPTION"
+		;;
+	*)
+		echo "Bad arguments, see 'config help put' for usage"
+		;;
+	esac
+
+	exit 0
+}
+
+# Check the user input for put options
+# if no filename given return false (1)
+put_check_filename () {
+	[ $# -lt 1 ] && die "ERROR: Bad Bad arguments, see 'config help put' for usage"
+	USERNAME=$(echo $1 | cut -d @ -f1)
+	REMOTEHOST=$(echo $1 | cut -d @ -f2 | cut -d : -f1)
+	FULLPATH=$(echo $1 | cut -d @ -f2 | cut -d : -f2)
+	[ "${USERNAME}" = "" ] && \
+		die "No Username given, see 'config help put' for usage"
+	[ ${REMOTEHOST} = "" ] && \
+		die "No Hostname given, see 'config help put' for usage"
+	# If user enter login@host
+	if [ "${FULLPATH}" = "${REMOTEHOST}" ]; then
+		FILENAME=$(hostname).tar.xz
+		return 1
+	# if user enter login@host:
+	elif [ "${FULLPATH}" = "" ]; then
+		die "Check your syntax, see 'config help put' for usage"
+	# if user enter login@host:something
+	else
+		return 0
+	fi
+}
+
+# Get configuration from an git/scp server
+get () {
+	# option: protocol username@host <filename>
+	# example: scp admin@backup.host.fr:/path/filename
+	HOST=$(hostname -s)
+	CONFIG_FILE="${HOST}.tar.xz"
+	case "$SECOND_OPTION" in
+	scp)
+		echo "Get configuration archive SCP from ${THIRD_OPTION}"
+		if [ -f /tmp/${CONFIG_FILE} ]; then
+			rm /tmp/${CONFIG_FILE} || \
+				die "Can't delete previous /tmp/${CONFIG_FILE}"
+		fi
+		scp ${THIRD_OPTION} /tmp/${CONFIG_FILE} || \
+			die "ERROR: Can't download ${THIRD_OPTION}"
+		restore_cfg /tmp/${CONFIG_FILE} /etc
+		echo "Configuration restored"
+		echo "Don't forget confirming your restoration by a 'config save'"
+		;;
+	git)
+		echo "TO DO: Git commit to $THIRD_OPTION"
+		;;
+	*)
+		echo "Bad arguments, see 'config help get' for usage"
+		;;
+		esac
+	exit 0
+}
+
+# Clear all existing configuration and return to default setting
+factory () {
+	setlock
+	echo -n "Clear all saved configuration..."
+	# Autosave will prevent a rollback
+	if service autosave status	> /dev/null 2>&1 ; then
+		echo "Need to disable autosave feature"
+		service autosave onestop || die "ERROR, autosave not stopped"
+	fi
+
+	is_mounted /cfg || mount_cfg
+	rm -rf /cfg/*  || echo "WARNING: Error during rm -rf /cfg/"
+	umount_cfg
+	if [ -f /boot/loader.conf.local ]; then
+		mount -uw /
+		rm -rf /boot/loader.conf.local
+		mount -ur /
+	fi
+	echo "Done"
+	echo "For confirming this action: Reboot and answer 'no' to the question about saving configuration"
+	echo "For canceling this action: Simply save the running configuration with 'config save'"
+	exit 0
+}
+
+# Set a lock preventing to run this script in parallel
+setlock () {
+	lockf -s -t 30 "$lock" "$@"
+}
+
+###################
+## Main function ##
+###################
+
+# Prevent to execute this script twice
+trap cleanup EXIT INT TERM
+
+# Get options passed by user
+if [ $# -eq 0 ]; then
+	FIRST_OPTION=""
+	SECOND_OPTION=""
+	THIRD_OPTION=""
+	usage
+	exit 0
+fi
+
+FIRST_OPTION="$1"
+
+if [ $# -ge 2 ]; then
+   SECOND_OPTION="$2"
+else
+   SECOND_OPTION=""
+fi
+if [ $# -ge 3 ]; then
+   THIRD_OPTION="$3"
+else
+  THIRD_OPTION=""
+fi
+
+set -u
+
+case "$FIRST_OPTION" in
+	save)
+		save_cfg
+		;;
+	apply)
+		apply_cfg
+		;;
+	diff)
+		diff
+		;;
+	rollback)
+		rollback
+		;;
+	put)
+		put
+		;;
+	get)
+		get
+		;;
+	factory)
+		factory
+		;;
+	help|h)
+		usage
+		;;
+	*)
+		usage
+		;;
+esac
