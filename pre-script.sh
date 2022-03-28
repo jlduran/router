@@ -154,6 +154,15 @@ _zfs_setup_nanobsd_etc()
 
 	# Remove poudriere-populated rc.conf
 	rm -f etc/rc.conf
+
+	# Try to use the latest leap seconds file from the host
+	# or download from the Internet
+	if [ -f /var/db/ntpd.leap-seconds.list ]; then
+		cp ${mnt}/var/db/ntpd.leap-seconds.list etc/ntp/leap-seconds
+	else
+		fetch -o etc/ntp/leap-seconds \
+		    https://www.ietf.org/timezones/data/leap-seconds.list
+	fi
 	)
 }
 
