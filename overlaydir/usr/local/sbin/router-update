@@ -3,12 +3,12 @@
 # Script to update the router with a new boot environment.
 #
 # usage:
-#	ssh somewhere cat router.be.zfs | update router-version
+#	ssh somewhere cat router.be.zfs | router-update router-version
 #
 
 # XXX eventually, this should become:
-# update check  ->  checks if there is a newer vesion available
-# update upgrade -> fetch the file and pipe to:
+# router-update fetch   -> checks if there is a newer vesion available
+# router-update install -> fetch the file and pipe to:
 
 set -e
 
