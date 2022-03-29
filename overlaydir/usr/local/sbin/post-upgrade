@@ -1,120 +1,54 @@
 #!/bin/sh
-#
-# XXX need something similar
-#
-# Post-upgrade fixup tool for BSD Router Project
-# https://bsdrp.net
-#
-# Copyright (c) 2009-2020, The BSDRP Development Team
-# All rights reserved.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-# 1. Redistributions of source code must retain the above copyright
-#    notice, this list of conditions and the following disclaimer.
-# 2. Redistributions in binary form must reproduce the above copyright
-#    notice, this list of conditions and the following disclaimer in the
-#    documentation and/or other materials provided with the distribution.
-#
-# THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
-# ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-# ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
-# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-# OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-# HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-# LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-# OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-# SUCH DAMAGE.
-#
 
 set -e
 
-# A useful function (from: http://code.google.com/p/sh-die/)
-die() { echo -n "EXIT: " >&2; echo "$@" >&2; exit 1; }
-
-[ $# -lt 1 ] && die "ERROR: This script should be call by update"
-
-DST=$1
-set -u
-mount_newpart () {
-	if [ ! -d /tmp/sysupgrade ]; then
-    	mkdir /tmp/sysupgrade
-		if ! mount ${DST} /tmp/sysupgrade; then
-			echo "ERROR: Can't mount new partition"
-			rm -r /tmp/sysupgrade || echo "and can't clean /tmp/sysupgrade"
-    		exit 1
-		fi
-	fi
+die()
+{
+	echo "$@" >&2
+	exit 1
 }
 
-umount_newpart () {
-	if mount | grep -q "${DST} on /tmp/sysupgrade"; then
-		umount /tmp/sysupgrade || die "ERROR: Can't umount new partition"
-		rm -r /tmp/sysupgrade || echo "WARNING: Can't remove tempdir"
-	fi
+[ $# -eq 1 ] || die "Wrong number of arguments"
+
+BE="$1"
+TMP_BE_MOUNT="$(mktmp -d /tmp/post-upgrade.XXXXXX)"
+
+mount_newbe () {
+	[ bectl mount "$BE" "$TMP_BE_MOUNT" ] ||
+	    die "Can't mount new boot environment"
 }
 
-# Release 1.1 upgrade script didn't preserve the existence of /boot/loader.conf.local
-if grep -q '^1.1$' /etc/version; then
-	mount_newpart
-	# Kept the /boot/loader.conf.local file
+umount_newbe () {
+	[ bectl umount "$BE" ] ||
+	    die "Can't umount new boot environment"
+}
+
+copy_custom_boot_loader_config()
+{
 	if [ -f /boot/loader.conf.local ]; then
-    	cp /boot/loader.conf.local /tmp/sysupgrade/boot || echo "WARNING: Can't backup /boot/loader.conf.local"
+		cp /boot/loader.conf.local $TMP_BE_MOUNT/boot/ ||
+		    die "Can't backup /boot/loader.conf.local"
 	fi
-	umount_newpart
-fi
 
-# Release 1.7 (and previous, but they are very old, then we don't care here) need a Quagga to FRR upgrade
-if grep -q '^1.7' /etc/version; then
-	# Need to add new users and groups
-	pw groupadd frr -g 168
-	pw useradd frr -u 168 -c "FRRouting user" -d /var/empty -g 168 -s /usr/sbin/nologin
-	pw groupadd frrvty -M frr -g 152
-	config save
-	# Need to check if /cfg/group or /cfg/password and generation action
-	if grep -q quagga /etc/rc.conf; then
-		echo "Quagga seems configured, replacing quagga references by frr..."
-		# Replacing quagga by frr and copying quagga configuration files into frr
-		if mount | ! grep -q "/cfg"; then
-			mount /cfg
-		fi
-		sed -i "" -e s/quagga/frr/g /cfg/rc.conf
-		# We will change current /etc/rc.conf too for avoiding asking saving before reboot
-		sed -i "" -e s/quagga/frr/g /etc/rc.conf
-
-		if [ -d /cfg/local/quagga ]; then
-			[ -d /cfg/local/frr ] || mkdir /cfg/local/frr
-			cp /cfg/local/quagga/* /cfg/local/frr/
-			chown -R 168:168 /cfg/local/frr/
-		fi
-		umount /cfg
+	if [ ls -A /boot/loader.conf.d/*.conf ]; then
+		cp /boot/loader.conf.d/*.conf $TMP_BE_MOUNT/boot/loader.conf.d/ ||
+		    die "Can't backup /boot/loader.conf.d/*.conf files"
 	fi
-fi
+}
 
-# Check if /etc/fstab contains special directories (
-CFG_UMOUNT=true
-if ! grep -q fdesc /etc/fstab; then
-	if mount | ! grep -q "/cfg"; then
-		mount /cfg || die "cannot mount /cfg"
-	else
-		CFG_UMOUNT=false
-	fi
-	(
-	echo "fdesc   /dev/fd         fdescfs         rw      0       0"
-	echo "proc    /proc           procfs          rw      0       0"
-	) >> /cfg/fstab
-	cp /cfg/fstab /etc/ || die "Cannot copy patched /cfg/fstab into /etc"
-	if (${CFG_UMOUNT}); then
-		umount /cfg || true
-	fi
-fi
+change_users()
+{
+	# If the upgrade involves creating/removing users/groups,
+	# add them here
+	#
+	# pw groupadd <newgroup> -g <gid>
+	# pw useradd <newuser> -u <uid> -g <gid>  -c "Full Name" \
+	#     -d /var/empty -s /usr/sbin/nologin
+	# config_save
+	:
+}
 
-# If we need to add new users (because local /etc/master.passw was modified by just changing the root password, the new one will be ignored)
-#   echo 'blablalba' >> /etc/master.passwd
-#   pwd_mkdb -C /etc/master.passwd && pwd_mkdb -p /etc/master.passwd || die "error"
-#   config save
-
-exit 0
+mount_newbe
+copy_custom_boot_loader_config
+change_users
+umount_newbe
