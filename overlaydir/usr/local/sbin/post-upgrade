@@ -2,6 +2,8 @@
 
 set -e
 
+# TODO pool management: upgrade after last supported BE is removed
+
 die()
 {
 	echo "$@" >&2
@@ -36,6 +38,16 @@ copy_custom_boot_loader_config()
 	fi
 }
 
+copy_new_efi()
+{
+	trap "umount /boot/efi" 1 2 15
+
+	mount /boot/efi
+	cp $TMP_BE_MOUNT/boot/loader.efi /boot/efi/EFI/BOOT/BOOTx64.efi
+	cp $TMP_BE_MOUNT/boot/loader.efi /boot/efi/EFI/FreeBSD/loader.efi
+	umount /boot/efi
+}
+
 change_users()
 {
 	# If the upgrade involves creating/removing users/groups,
@@ -50,5 +62,6 @@ change_users()
 
 mount_newbe
 copy_custom_boot_loader_config
+copy_new_efi
 change_users
 umount_newbe

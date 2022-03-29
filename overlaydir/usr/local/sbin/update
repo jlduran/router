@@ -1,0 +1,35 @@
+#!/bin/sh
+#
+# Script to update the router with a new boot environment.
+#
+# usage:
+#	ssh somewhere cat router.be.zfs | update router-version
+#
+
+# XXX eventually, this should become:
+# update check  ->  checks if there is a newer vesion available
+# update upgrade -> fetch the file and pipe to:
+
+set -e
+
+die()
+{
+	echo "$@" >&2
+	exit 1
+}
+
+[ $# -eq 1 ] || die "Wrong number of arguments"
+
+BE="$1"
+
+# Import new boot environment
+bectl import "$BE" || die "Can't import new boot environment"
+
+# Perform post-upgrade tasks
+/usr/local/sbin/post-ugrade "$BE"
+
+# Set it to boot next only once
+bectl activate -t "$BE"
+
+echo "The Router has been upgraded!"
+echo "Reboot for changes to take effect."
