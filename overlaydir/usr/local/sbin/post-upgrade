@@ -48,6 +48,16 @@ copy_new_efi()
 	umount /boot/efi
 }
 
+copy_etc_hostid()
+{
+	trap "umount /cfg" 1 2 15
+
+	mount /cfg
+	cp /cfg/hostid $TMP_BE_MOUNT/etc/hostid
+	cp /cfg/hostid $TMP_BE_MOUNT/conf/base/etc/hostid
+	umount /cfg
+}
+
 change_users()
 {
 	# If the upgrade involves creating/removing users/groups,
@@ -63,5 +73,6 @@ change_users()
 mount_newbe
 copy_custom_boot_loader_config
 copy_new_efi
+copy_etc_hostid
 change_users
 umount_newbe
