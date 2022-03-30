@@ -11,9 +11,6 @@ NANO_RAM_TMPVARSIZE="32m"
 
 NANO_WORLDDIR="${WRKDIR}/world"
 
-# Comment this out if /usr/obj is a symlink
-#CPIO_SYMLINK=--insecure
-
 # Use a standard pool name
 ZFS_POOL_NAME="zroot"
 TMP_ZFS_POOL_NAME="${ZFS_POOL_NAME}.$(jot -r 1 1000000000)"
@@ -99,7 +96,8 @@ _zfs_setup_nanobsd()
 	if [ -d usr/local/etc ] ; then
 		(
 		cd usr/local/etc
-		find . -print | cpio ${CPIO_SYMLINK} -dumpl ../../../etc/local
+		tar -C ${WRKDIR}/world -X ${excludelist} -cf - usr/local/etc | \
+		    tar -xf - -C ${WRKDIR}/world/etc/local --strip-components=3
 		cd ..
 		rm -xrf etc
 		)
@@ -118,7 +116,7 @@ _zfs_setup_nanobsd()
 		# we use hard links so we have them both places.
 		# the files in /$d will be hidden by the mount.
 		mkdir -p conf/base/$d conf/default/$d
-		find $d -print | cpio ${CPIO_SYMLINK} -dumpl conf/base/
+		tar -C ${WRKDIR}/world -X ${excludelist} -cf - $d | tar -xf - -C ${WRKDIR}/world/conf/base
 	done
 
 	echo "$NANO_RAM_ETCSIZE" > conf/base/etc/md_size
