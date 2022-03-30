@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# EFI_SIZE set the EFI system partition size in MB
+EFI_SIZE=200
+
 # Size of the /etc ramdisk
 NANO_RAM_ETCSIZE="32m"
 
@@ -9,7 +12,7 @@ NANO_RAM_TMPVARSIZE="32m"
 NANO_WORLDDIR="${WRKDIR}/world"
 
 # Comment this out if /usr/obj is a symlink
-# CPIO_SYMLINK=--insecure
+#CPIO_SYMLINK=--insecure
 
 # Use a standard pool name
 ZFS_POOL_NAME="zroot"
@@ -27,7 +30,6 @@ make_entropy_seeds() {
 
 # XXX override in the meantime (not yet upstreamed)
 make_esp_file() {
-	local file size loader stagedir fatbits efibootname
 	file=$1
 	size=$2
 	loader=$3
@@ -44,8 +46,9 @@ make_esp_file() {
 
 	msg "Creating ESP image"
 	stagedir=$(mktemp -d /tmp/stand-test.XXXXXX)
-	mkdir -p "${stagedir}/EFI/BOOT"
-	mkdir -p "${stagedir}/EFI/FreeBSD"
+
+	# Copy the EFI bootloader
+	mkdir -p "${stagedir}/EFI/BOOT" "${stagedir}/EFI/FreeBSD"
 	efibootname=$(get_uefi_bootname)
 	cp "${loader}" "${stagedir}/EFI/BOOT/${efibootname}.efi"
 	cp "${loader}" "${stagedir}/EFI/FreeBSD/loader.efi"
@@ -126,7 +129,6 @@ _zfs_setup_nanobsd()
 
 	# Put /tmp on the /var ramdisk (could be symlink already)
 	_zfs_tgt_dir2symlink tmp var/tmp
-
 	)
 }
 
@@ -138,7 +140,7 @@ _zfs_setup_nanobsd_etc()
 	# create diskless marker file
 	touch etc/diskless
 
-	# make root filesystem R/O by default
+	# Make root filesystem R/O by default
 	sysrc -f etc/defaults/vendor.conf "root_rw_mount=NO"
 
 	echo "${ZFS_POOL_NAME}/cfg		/cfg		zfs	rw,noatime,noauto	0	0" >> etc/fstab
@@ -181,14 +183,14 @@ zfs_prepare()
 		msg "Creating ZFS Datasets"
 		zfs create -o mountpoint=none ${tmpzroot}/${ZFS_BEROOT_NAME}
 		zfs create -o mountpoint=/ ${tmpzroot}/${ZFS_BEROOT_NAME}/${ZFS_BOOTFS_NAME}
-		# XXX Put /tmp on the /var ramdisk
+		# Put /tmp on the /var ramdisk
 		#zfs create -o mountpoint=/tmp -o exec=on -o setuid=off ${tmpzroot}/tmp
 		zfs create -o mountpoint=/usr -o canmount=off ${tmpzroot}/usr
 		zfs create ${tmpzroot}/usr/home
 		#zfs create -o setuid=off ${tmpzroot}/usr/ports
 		#zfs create ${tmpzroot}/usr/src
 		#zfs create ${tmpzroot}/usr/obj
-		# XXX Treat /var as monolithic
+		# Treat /var as monolithic
 		zfs create -o mountpoint=/var -o canmount=off ${tmpzroot}/var
 		#zfs create -o exec=off -o setuid=off ${tmpzroot}/var/audit
 		#zfs create -o exec=off -o setuid=off ${tmpzroot}/var/crash
@@ -284,7 +286,7 @@ zfs_generate()
 	gpt|zfs)
 		espfilename=$(mktemp /tmp/efiboot.XXXXXX)
 		zfsimage=${WRKDIR}/raw.img
-		make_esp_file ${espfilename} 200 ${mnt}/boot/loader.efi
+		make_esp_file ${espfilename} ${EFI_SIZE} ${mnt}/boot/loader.efi
 
 		if [ ${SWAPSIZE} != "0" ]; then
 			SWAPCMD="-p freebsd-swap/swap0::${SWAPSIZE_VALUE}${SWAPSIZE_UNIT}"
