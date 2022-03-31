@@ -95,11 +95,9 @@ _zfs_setup_nanobsd()
 	# have hardcoded paths under ${prefix}/etc are not tweakable.
 	if [ -d usr/local/etc ] ; then
 		(
-		cd usr/local/etc
 		tar -C ${WRKDIR}/world -X ${excludelist} -cf - usr/local/etc | \
 		    tar -xf - -C ${WRKDIR}/world/etc/local --strip-components=3
-		cd ..
-		rm -xrf etc
+		rm -xrf usr/local/etc
 		)
 	fi
 
