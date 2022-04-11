@@ -114,7 +114,8 @@ _zfs_setup_nanobsd()
 		# we use hard links so we have them both places.
 		# the files in /$d will be hidden by the mount.
 		mkdir -p conf/base/$d conf/default/$d
-		tar -C ${WRKDIR}/world -X ${excludelist} -cf - $d | tar -xf - -C ${WRKDIR}/world/conf/base
+		tar -C ${WRKDIR}/world -X ${excludelist} -cf - $d | \
+		    tar -xf - -C ${WRKDIR}/world/conf/base
 	done
 
 	echo "$NANO_RAM_ETCSIZE" > conf/base/etc/md_size
