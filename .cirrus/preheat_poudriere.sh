@@ -104,14 +104,15 @@ echo "ports-mgmt/pkg" > pkglist.bootstrap
 poudriere bulk -j ${PREHEAT_POUDRIERE_JAILNAME} -p ${PREHEAT_POUDRIERE_PTNAME} -f pkglist.bootstrap
 
 ## build the full package list from pkglist
-echo "Building full package list.."
+printf "Building full package list... "
 while read -r _origin; do
 	_preheat_add_pkg_to_full_pkglist "$_origin"
 	_preheat_process_deps "$_origin"
 done < ${CIRRUS_WORKING_DIR}/pkglist
+echo "done."
 
 ## fetch each pkg from pkglist
-echo "Fetching full package list.."
+echo "Fetching full package list..."
 for _origin in $(sort -u "$full_pkglist"); do
 	_preheat_fetch_pkg "$_origin"
 done
