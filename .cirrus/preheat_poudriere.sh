@@ -15,6 +15,7 @@ full_pkglist="$(mktemp pkglist.XXXXXX)"
 _XXX_patch_poudriere()
 {
 	fetch -o /usr/local/share/poudriere/image_zfs.sh https://raw.githubusercontent.com/freebsd/poudriere/master/src/share/poudriere/image_zfs.sh
+	fetch -o /usr/local/share/poudriere/image.sh https://raw.githubusercontent.com/freebsd/poudriere/master/src/share/poudriere/image.sh
 }
 
 _preheat_add_pkg_to_full_pkglist()
