@@ -1,0 +1,4 @@
+cfg.*/**
+overlaydir.*/**
+pkglist.*
+pre-script.sh.*
