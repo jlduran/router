@@ -15,5 +15,6 @@ sysutils/flashrom
 sysutils/intel-pcm
 sysutils/monit
 sysutils/tmux
+sysutils/edk2@bhyve
 sysutils/vm-bhyve
 textproc/jq
