@@ -8,7 +8,7 @@ PREHEAT_FREEBSD_VERSION="13"
 PREHEAT_ARCH="amd64"
 PREHEAT_POUDRIERE_JAILNAME="router"
 PREHEAT_POUDRIERE_PTNAME="quarterly"
-PREHEAT_PYTHON_SUFFIX="py38"
+PYTHON_SUFFIX="39"
 
 full_pkglist="$(mktemp pkglist.XXXXXX)"
 
@@ -83,7 +83,7 @@ _preheat_get_name()
 {
 	_origin="$1"
 
-	echo "${_origin##*/}" | sed -e "s/py-/${PREHEAT_PYTHON_SUFFIX}-/g" -e "s/\@/-/g"
+	echo "${_origin##*/}" | sed -e "s/py-/py${PYTHON_SUFFIX}-/g" -e "s/\@/-/g"
 }
 
 _preheat_fix_origin()
