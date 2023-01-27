@@ -1,3 +1,10 @@
+##############################################################
+# DO NOT MODIFY THIS FILE!
+#
+# Your changes will not be preserved after an upgrade.
+# Use /etc/ssh/sshd_config.d/*.conf instead.
+##############################################################
+
 #	$OpenBSD: sshd_config,v 1.104 2021/07/02 05:11:21 dtucker Exp $
 
 # This is the sshd server system-wide configuration file.  See
@@ -9,6 +16,8 @@
 # OpenSSH is to specify options with their default value where
 # possible, but leave them commented.  Uncommented options override the
 # default value.
+
+Include /etc/ssh/sshd_config.d/*.conf
 
 # Note that some of FreeBSD's defaults differ from OpenBSD's, and
 # FreeBSD has a few additional options.
