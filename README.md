@@ -8,17 +8,15 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 1. Create a poudriere jail (with a kernel)
 
-       poudriere jail -c -j router -v 14.0-RELEASE -K GENERIC
+       poudriere jail -c -j router -m git+https -v main -K Router
 
 2. Create a ports tree
 
-       QUARTERLY_BRANCH=$(date +%YQ)$((($(date +%-m)-1)/3+1))
-       poudriere ports -c -U https://git.freebsd.org/ports.git -B $QUARTERLY_BRANCH \
-           -p quarterly
+       poudriere ports -c -U https://git.freebsd.org/ports.git -B main -p latest
 
 3. Create/modify the list of ports to be included
 
-       cat > pkglist <<EOF
+       cat > router-latest-pkglist <<EOF
        net/bird2@netlink
        sysutils/tmux
        security/strongswan
@@ -27,12 +25,12 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 4. Build the ports
 
-       poudriere bulk -j router -b quarterly -p quarterly -f pkglist
+       poudriere bulk -j router -b latest -p latest -f router-latest-pkglist
 
 5. Create the router image
 
-       poudriere image -t zfs -j router -s 4g -p quarterly -n router \
-           -f pkglist -c overlaydir -B pre-script.sh
+       poudriere image -t zfs -j router -s 4g -p latest -n router \
+           -f router-latest-pkglist -c overlaydir -B pre-script.sh
 
 6. Test the image
 
@@ -47,22 +45,16 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 2. Update the ports tree
 
-       poudriere ports -u -p quarterly
-
-   or create an updated ports tree
-
-       QUARTERLY_BRANCH=$(date +%YQ)$((($(date +%-m)-1)/3+1))
-       poudriere ports -c -U https://git.freebsd.org/ports.git -B $QUARTERLY_BRANCH \
-           -p quarterly
+       poudriere ports -u -p latest
 
 4. Build the ports
 
-       poudriere bulk -j router -b quarterly -p quarterly -f pkglist
+       poudriere bulk -j router -b latest -p latest -f router-latest-pkglist
 
 5. Create a router boot environment (BE)
 
-       poudriere image -t zfs+send+be -j router -s 4g -p quarterly -n router \
-           -f pkglist -c overlaydir -B pre-script.sh
+       poudriere image -t zfs+send+be -j router -s 4g -p latest -n router \
+           -f router-latest-pkglist -c overlaydir -B pre-script.sh
 
 6. Test the BE image:
 
