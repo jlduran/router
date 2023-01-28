@@ -18,7 +18,7 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 3. Create/modify the list of ports to be included
 
        cat > pkglist <<EOF
-       net/bird2
+       net/bird2@netlink
        sysutils/tmux
        security/strongswan
        ...
