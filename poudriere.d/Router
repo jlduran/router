@@ -1,5 +1,6 @@
 include		GENERIC-NODEBUG
+
 ident		Router
+
 options		TCPHPTS
 options		RATELIMIT
-makeoptions	WITH_EXTRA_TCP_STACKS=1
