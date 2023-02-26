@@ -26,15 +26,15 @@ poudriere_task:
   create_router_be_script:
     - poudriere image -t zfs+send+be -j router -s 4g -p quarterly -h router.home -n router -f pkglist -c overlaydir -B pre-script.sh
 
-  prepare_artifacts_script:
-    - mkdir $CIRRUS_WORKING_DIR/router
-    - cp /usr/local/poudriere/data/images/router.img router
-    - cp /usr/local/poudriere/data/images/router.be.zfs router
-    - xz -9 router/router.img
-    - xz -9 router/router.be.zfs
+# prepare_artifacts_script:
+#   - mkdir $CIRRUS_WORKING_DIR/router
+#   - cp /usr/local/poudriere/data/images/router.img router
+#   - cp /usr/local/poudriere/data/images/router.be.zfs router
+#   - xz -9 router/router.img
+#   - xz -9 router/router.be.zfs
 
-  upload_to_github_script:
-    - sh .cirrus/upload_to_github.sh
+# upload_to_github_script:
+#   - sh .cirrus/upload_to_github.sh
 
-  router_artifacts:
-    path: router/**
+# router_artifacts:
+#   path: router/**
