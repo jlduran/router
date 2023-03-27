@@ -3,9 +3,10 @@ dns/bind918
 editors/vim
 lang/python
 net/arping
-net/bird2@base
+net/bird2@netlink
 net/dpinger
 net/kea
+net/pkt-gen
 security/ca_root_nss
 security/strongswan
 security/sudo
@@ -13,6 +14,7 @@ security/tpm2-tools
 sysutils/devcpu-data-intel
 sysutils/flashrom
 sysutils/intel-pcm
+sysutils/ipmitool
 sysutils/monit
 sysutils/tmux
 sysutils/edk2@bhyve
