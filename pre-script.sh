@@ -150,9 +150,17 @@ _zfs_setup_nanobsd_etc()
 	touch etc/opiekeys
 	chmod 0600 etc/opiekeys
 	touch etc/zfs/exports
+	# XXX create /usr/local/etc/libmap.d
+	mkdir -p etc/local/libmap.d
 
 	# Remove poudriere-populated rc.conf
 	rm -f etc/rc.conf
+
+	# Remove toor user
+	pw userdel toor
+
+	# Secure ttys
+	sed -i '' -e 's/ secure/ insecure/g' etc/ttys
 	)
 }
 
