@@ -91,7 +91,9 @@ The router uses ZFS as the underlying file system, but mounts `/etc` and `/var` 
 
 In order to save configuration changes, issue the following command:
 
-    # save_cfg
+```console
+# save_cfg
+```
 
 Configuration changes are then saved to `/cfg`, to overlay the base `/etc` template (NanoBSD-style).
 
