@@ -3,6 +3,7 @@ poudriere_task:
     GITHUB_TOKEN: ENCRYPTED[!a330bd1134ffd9c9fe13b7ab0fe920dc12c19d297efb0ac3c5492b3d7f1755fcdc05fdf702ad0748c07880abba88419d!]
     FREEBSD_VERSION: 13.2-RELEASE
     PORTS_BRANCH: 2023Q2
+    NO_LIB32: yes
 
   freebsd_instance:
     image_family: freebsd-13-2
