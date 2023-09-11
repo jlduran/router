@@ -7,6 +7,7 @@ net/bird2@netlink
 net/dpinger
 net/kea
 net/pkt-gen
+net/rpki-client
 security/ca_root_nss
 security/strongswan
 security/sudo
