@@ -12,12 +12,12 @@ security/ca_root_nss
 security/strongswan
 security/sudo
 security/tpm2-tools
-sysutils/cpu-microcode-intel
-sysutils/edk2@bhyve
+sysutils/devcpu-data-intel
 sysutils/flashrom
 sysutils/intel-pcm
 sysutils/ipmitool
 sysutils/monit
 sysutils/tmux
+sysutils/edk2@bhyve
 sysutils/vm-bhyve
 textproc/jq
