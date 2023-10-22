@@ -26,7 +26,7 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 4. Build the ports
 
-       poudriere bulk -j router -p quarterly -f pkglist
+       poudriere bulk -j router -b quarterly -p quarterly -f pkglist
 
 5. Create the router image
 
@@ -55,7 +55,7 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 4. Build the ports
 
-       poudriere bulk -j router -p quarterly -f pkglist
+       poudriere bulk -j router -b quarterly -p quarterly -f pkglist
 
 5. Create a router boot environment (BE)
 

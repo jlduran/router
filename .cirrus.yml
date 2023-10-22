@@ -18,8 +18,7 @@ poudriere_task:
     - poudriere ports -c -U https://git.freebsd.org/ports.git -B $PORTS_BRANCH -p quarterly
 
   build_ports_script:
-    - sh .cirrus/preheat_poudriere.sh
-    - poudriere bulk -j router -p quarterly -f pkglist
+    - poudriere bulk -j router -b quarterly -p quarterly -f pkglist
 
   create_router_image_script:
     - poudriere image -t zfs -j router -s 4g -p quarterly -h router.home -n router -f pkglist -c overlaydir -B pre-script.sh
