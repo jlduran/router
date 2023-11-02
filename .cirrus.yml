@@ -2,7 +2,6 @@ poudriere_task:
   env:
     GITHUB_TOKEN: ENCRYPTED[!a330bd1134ffd9c9fe13b7ab0fe920dc12c19d297efb0ac3c5492b3d7f1755fcdc05fdf702ad0748c07880abba88419d!]
     FREEBSD_VERSION: 13.2-RELEASE
-    PORTS_BRANCH: 2023Q4
     NO_LIB32: yes
 
   freebsd_instance:
@@ -15,7 +14,8 @@ poudriere_task:
     - poudriere jail -c -j router -v $FREEBSD_VERSION -K GENERIC
 
   create_ports_tree_script:
-    - poudriere ports -c -U https://git.freebsd.org/ports.git -B $PORTS_BRANCH -p quarterly
+    - QUARTERLY_BRANCH=$(date +%YQ)$((($(date +%-m)-1)/3+1))
+    - poudriere ports -c -U https://git.freebsd.org/ports.git -B $QUARTERLY_BRANCH -p quarterly
 
   build_ports_script:
     - poudriere bulk -j router -b quarterly -p quarterly -f pkglist

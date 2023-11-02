@@ -12,7 +12,8 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 2. Create a ports tree
 
-       poudriere ports -c -U https://git.freebsd.org/ports.git -B <quarterly branch> \
+       QUARTERLY_BRANCH=$(date +%YQ)$((($(date +%-m)-1)/3+1))
+       poudriere ports -c -U https://git.freebsd.org/ports.git -B $QUARTERLY_BRANCH \
            -p quarterly
 
 3. Create/modify the list of ports to be included
@@ -50,7 +51,8 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
    or create an updated ports tree
 
-       poudriere ports -c -U https://git.freebsd.org/ports.git -B <new quarterly branch> \
+       QUARTERLY_BRANCH=$(date +%YQ)$((($(date +%-m)-1)/3+1))
+       poudriere ports -c -U https://git.freebsd.org/ports.git -B $QUARTERLY_BRANCH \
            -p quarterly
 
 4. Build the ports
