@@ -6,15 +6,19 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 ## Create a new router image
 
-1. Create a poudriere jail (with a kernel)
+1. Copy poudriere.d
 
-       poudriere jail -c -j router -m git+https -v main -K Router
+       cp -a poudriere.d/ /usr/local/etc/poudriere.d
 
-2. Create a ports tree
+2. Create a poudriere jail (with a kernel)
 
-       poudriere ports -c -U https://git.freebsd.org/ports.git -B main -p latest
+       poudriere jail -c -j router -v router -K Router
 
-3. Create/modify the list of ports to be included
+3. Create a ports tree
+
+       poudriere ports -c -B main -p latest
+
+4. Create/modify the list of ports to be included
 
        cat > router-latest-pkglist <<EOF
        net/bird2@netlink
@@ -23,16 +27,16 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
        ...
        EOF
 
-4. Build the ports
+5. Build the ports
 
        poudriere bulk -j router -b latest -p latest -f router-latest-pkglist
 
-5. Create the router image
+6. Create the router image
 
        poudriere image -t zfs -j router -s 4g -p latest -n router \
            -f router-latest-pkglist -c overlaydir -B pre-script.sh
 
-6. Test the image
+7. Test the image
 
        sh /usr/share/examples/bhyve/vmrun.sh -uE -m 4G -n e1000 -t tap0 -t tap1 \
            -d /usr/local/poudriere/data/images/router.img router

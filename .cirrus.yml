@@ -13,10 +13,10 @@ poudriere_task:
     - cp -a poudriere.d/* /usr/local/etc/poudriere.d
 
   create_poudriere_jail_script:
-    - poudriere jail -c -j router -m git+https -v main -K MINIMAL
+    - poudriere jail -c -j router -v router -K Router
 
   create_ports_tree_script:
-    - poudriere ports -c -U https://git.freebsd.org/ports.git -B main -p latest
+    - poudriere ports -c -B main -p latest
 
   build_ports_script:
     - poudriere bulk -j router -b latest -p latest -f router-latest-pkglist
