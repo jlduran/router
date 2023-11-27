@@ -1,11 +1,11 @@
 poudriere_task:
   env:
     GITHUB_TOKEN: ENCRYPTED[!a330bd1134ffd9c9fe13b7ab0fe920dc12c19d297efb0ac3c5492b3d7f1755fcdc05fdf702ad0748c07880abba88419d!]
-    FREEBSD_VERSION: 13.2-RELEASE
+    FREEBSD_VERSION: 14.0-RELEASE
     NO_LIB32: yes
 
   freebsd_instance:
-    image_family: freebsd-13-2
+    image_family: freebsd-14-0
 
   install_dependencies_script:
     - pkg install -y git poudriere-devel jq
