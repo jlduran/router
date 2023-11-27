@@ -1,6 +1,0 @@
-include		GENERIC-NODEBUG
-
-ident		Router
-
-options		TCPHPTS
-options		RATELIMIT

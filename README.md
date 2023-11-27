@@ -12,7 +12,7 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 2. Create a poudriere jail (with a kernel)
 
-       poudriere jail -c -j router -v router -K Router
+       poudriere jail -c -j router -m git+http -v router -K Router
 
 3. Create a ports tree
 
@@ -45,7 +45,7 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 1. Update the poudriere jail
 
-       poudriere jail -u -j router
+       poudriere jail -u -t router -j router
 
 2. Update the ports tree
 

@@ -13,7 +13,7 @@ poudriere_task:
     - cp -a poudriere.d/* /usr/local/etc/poudriere.d
 
   create_poudriere_jail_script:
-    - poudriere jail -c -j router -v router -K Router
+    - poudriere jail -c -j router -m git+http -v router -K Router
 
   create_ports_tree_script:
     - poudriere ports -c -B main -p latest
