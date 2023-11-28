@@ -45,7 +45,7 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 1. Update the poudriere jail
 
-       poudriere jail -u -t router -j router
+       poudriere jail -u -j router
 
 2. Update the ports tree
 
