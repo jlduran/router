@@ -95,9 +95,10 @@ In order to save configuration changes, issue the following command:
 
 Configuration changes are then saved to `/cfg`, to overlay the base `/etc` template (NanoBSD-style).
 
-## Create a custom kernel
+## Using a custom kernel
 
-In order to test experimental features, a custom kernel can be built, using the `router` branch from our FreeBSD repo
+In order to test experimental features, a custom kernel can be built, using the `router` branch from our FreeBSD repo.
+The file `router-poudriere.conf` contains the `GIT_BASEURL` to be used for creating the jail.
 
 1. Copy poudriere(8) configuration files from `poudriere.d`
 
