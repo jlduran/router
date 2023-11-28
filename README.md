@@ -20,7 +20,7 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 4. Create/modify the list of ports to be included
 
-       cat > router-latest-pkglist <<EOF
+       cat > pkglist <<EOF
        net/bird2@netlink
        sysutils/tmux
        security/strongswan
@@ -29,12 +29,12 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 5. Build the ports
 
-       poudriere bulk -j router -b latest -p latest -f router-latest-pkglist
+       poudriere bulk -j router -b latest -p latest -f pkglist
 
 6. Create the router image
 
        poudriere image -t zfs -j router -s 4g -p latest -n router \
-           -f router-latest-pkglist -c overlaydir -B pre-script.sh
+           -f pkglist -c overlaydir -B pre-script.sh
 
 7. Test the image
 
@@ -53,12 +53,12 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 4. Build the ports
 
-       poudriere bulk -j router -b latest -p latest -f router-latest-pkglist
+       poudriere bulk -j router -b latest -p latest -f pkglist
 
 5. Create a router boot environment (BE)
 
        poudriere image -t zfs+send+be -j router -s 4g -p latest -n router \
-           -f router-latest-pkglist -c overlaydir -B pre-script.sh
+           -f pkglist -c overlaydir -B pre-script.sh
 
 6. Test the BE image:
 
