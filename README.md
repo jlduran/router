@@ -6,13 +6,13 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 ## Create a new router image
 
-1. Copy poudriere.d
+1. Copy poudriere(8) configuration files from `poudriere.d`
 
        cp -a poudriere.d/ /usr/local/etc/poudriere.d
 
 2. Create a poudriere jail (with a kernel)
 
-       poudriere jail -c -j router -m git+http -v router -K Router
+       poudriere jail -c -j router -v 15.0-CURRENT -K GENERIC
 
 3. Create a ports tree
 
@@ -94,6 +94,18 @@ In order to save configuration changes, issue the following command:
 ```
 
 Configuration changes are then saved to `/cfg`, to overlay the base `/etc` template (NanoBSD-style).
+
+## Create a custom kernel
+
+In order to test experimental features, a custom kernel can be built, using the `router` branch from our FreeBSD repo
+
+1. Copy poudriere(8) configuration files from `poudriere.d`
+
+       cp -a poudriere.d/ /usr/local/etc/poudriere.d
+
+2. Create a poudriere jail (with a custom kernel)
+
+       poudriere jail -c -j router -m git+http -v router -K Router
 
 ## To do
 
