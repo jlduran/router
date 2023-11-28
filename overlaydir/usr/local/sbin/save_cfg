@@ -28,6 +28,7 @@
 
 set -e
 
+LOCKFILE="/tmp/save_cfg.lock"
 MAX_ARCHIVES=5
 
 archive_rollback()
@@ -39,7 +40,7 @@ archive_rollback()
 	archives="$(zfs list -Hro name -S creation -t snapshot zroot/cfg | \
 	    grep archive)"
 	num_archives="$(echo "$archives" | wc -l)"
-	[ $num_archives -gt $MAX_ARCHIVES ] &&
+	[ "$num_archives" -gt $MAX_ARCHIVES ] &&
 	    echo "$archives" | tail -$(( num_archives - MAX_ARCHIVES )) |
 	    xargs -L 1 zfs destroy -R
 }
@@ -62,88 +63,95 @@ snapshot()
 	zfs snapshot -r zroot/cfg@rollback
 }
 
-trap rollback HUP INT TERM
-# TODO lockf
-snapshot
-mount /cfg
-(
-cd /etc
-for filename in "$@" $(find * -type f)
-do
-	if [ ! -f /cfg/"$filename" ] && [ ! -f /cfg/.ignore/"$filename" ]
-	then
-
-		#
-		# If file doesn't exist in /cfg and file is not in the 'ignore' list
-		# then check if this file is exactly the same as original file
-		# in nanobsd image
-		#
-		if ! cmp -s /etc/"$filename" /conf/base/etc/"$filename"
+save_cfg()
+{
+	snapshot
+	mount /cfg
+	(
+	cd /etc
+	for filename in "$@" $(find ./* -type f)
+	do
+		if [ ! -f /cfg/"$filename" ] && [ ! -f /cfg/.ignore/"$filename" ]
 		then
-			file_path=$(dirname "$filename")
-			if [ "$file_path" != "$filename" ]
-			then
-				if [ ! -d /etc/"$file_path" ]
-				then
-					echo "Error: Path /etc/$file_path is not a directory."
-					exit 1;
-					# NOTREACHED
-				fi
-			fi
 
 			#
-			# Ask user - how should we handle this file.
-			# Add to cfg (y/n/i)?
-			#	y) -> save this file in /cfg
-			#	n) -> do not save this file in /cfg for current script invocation ONLY
-			#	i) -> add file to ignore list (/cfg/.ignore hierarchy) and never save
-			#	      try to add this file to /cfg.
+			# If file doesn't exist in /cfg and file is not in the 'ignore' list
+			# then check if this file is exactly the same as original file
+			# in nanobsd image
 			#
-			# touch is used to add files to /cfg to keep the script flow straight and easy
+			if ! cmp -s /etc/"$filename" /conf/base/etc/"$filename"
+			then
+				file_path=$(dirname "$filename")
+				if [ "$file_path" != "$filename" ]
+				then
+					if [ ! -d /etc/"$file_path" ]
+					then
+						echo "Error: Path /etc/$file_path is not a directory."
+						exit 1;
+						# NOTREACHED
+					fi
+				fi
+
+				#
+				# Ask user - how should we handle this file.
+				# Add to cfg (y/n/i)?
+				#	y) -> save this file in /cfg
+				#	n) -> do not save this file in /cfg for current script invocation ONLY
+				#	i) -> add file to ignore list (/cfg/.ignore hierarchy) and never save
+				#	      try to add this file to /cfg.
+				#
+				# touch is used to add files to /cfg to keep the script flow straight and easy
+				#
+				read -p "New file /etc/$filename found. Add to /cfg (y/n/i)? " key
+				case "$key" in
+				[yY])
+					if [ "$file_path" != "$filename" ]
+					then
+						mkdir -vp /cfg/"$file_path"
+					fi
+					touch /cfg/"$filename" && echo "File /etc/$filename added to /cfg."
+					;;
+				[iI])
+					mkdir -vp /cfg/.ignore
+					if [ "$file_path" != "$filename" ]
+					then
+						mkdir -vp /cfg/.ignore/"$file_path"
+					fi
+					touch /cfg/.ignore/"$filename" && echo "File /etc/$filename added to ignore list."
+					;;
+				esac
+			fi
+		fi
+	done
+
+	#
+	# Actually check all files in /cfg and save if necessary
+	#
+	cd /cfg
+	for filename in "$@" $(find ./* -type f)
+	do
+		if [ -f /etc/"$filename" ]
+		then
+			cmp -s /etc/"$filename" /cfg/"$filename" || cp -pfv /etc/"$filename" /cfg/"$filename"
+		else
+
 			#
-			read -p "New file /etc/$filename found. Add to /cfg (y/n/i)? " key
+			# Give user an option to remove file from /cfg if this file is removed from /etc
+			#
+			read -p "File /cfg/$filename not found in /etc. Remove from /cfg (y/n)? " key
 			case "$key" in
 			[yY])
-				if [ "$file_path" != "$filename" ]
-				then
-					mkdir -vp /cfg/"$file_path"
-				fi
-				touch /cfg/"$filename" && echo "File /etc/$filename added to /cfg."
-				;;
-			[iI])
-				mkdir -vp /cfg/.ignore
-				if [ "$file_path" != "$filename" ]
-				then
-					mkdir -vp /cfg/.ignore/"$file_path"
-				fi
-				touch /cfg/.ignore/"$filename" && echo "File /etc/$filename added to ignore list."
+				rm /cfg/"$filename" && echo "File /cfg/$filename removed"
 				;;
 			esac
 		fi
-	fi
-done
+	done
+	)
+	umount /cfg
+}
 
-#
-# Actually check all files in /cfg and save if necessary
-#
-cd /cfg
-for filename in "$@" $(find * -type f)
-do
-	if [ -f /etc/"$filename" ]
-	then
-		cmp -s /etc/"$filename" /cfg/"$filename" || cp -pfv /etc/"$filename" /cfg/"$filename"
-	else
-
-		#
-		# Give user an option to remove file from /cfg if this file is removed from /etc
-		#
-		read -p "File /cfg/$filename not found in /etc. Remove from /cfg (y/n)? " key
-		case "$key" in
-		[yY])
-			rm /cfg/"$filename" && echo "File /cfg/$filename removed"
-			;;
-		esac
-	fi
-done
-)
-umount /cfg
+trap rollback HUP INT TERM
+if ! /usr/bin/lockf -s -t 0 $LOCKFILE save_cfg; then
+	echo "A save_cfg operation is already in progress."
+	exit 1
+fi
