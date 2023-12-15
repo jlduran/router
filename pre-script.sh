@@ -159,6 +159,9 @@ _zfs_setup_nanobsd_etc()
 
 	# Secure ttys
 	sed -i '' -e 's/ secure/ insecure/g' etc/ttys
+
+	# Set dumpdev="NO" for release builds
+	sysrc -f etc/defaults/rc.conf "dumpdev=NO"
 	)
 }
 

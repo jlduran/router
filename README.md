@@ -6,17 +6,19 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 ## Create a new router image
 
-1. Create a poudriere jail (with a kernel)
+1. Copy poudriere(8) configuration files from `poudriere.d`
 
-       poudriere jail -c -j router -v 14.0-RELEASE -K GENERIC
+       cp -a poudriere.d/ /usr/local/etc/poudriere.d
 
-2. Create a ports tree
+2. Create a poudriere jail (with a kernel)
 
-       QUARTERLY_BRANCH=$(date +%YQ)$((($(date +%-m)-1)/3+1))
-       poudriere ports -c -U https://git.freebsd.org/ports.git -B $QUARTERLY_BRANCH \
-           -p quarterly
+       poudriere jail -c -j router -v 15.0-CURRENT -K GENERIC
 
-3. Create/modify the list of ports to be included
+3. Create a ports tree
+
+       poudriere ports -c -B main -p latest
+
+4. Create/modify the list of ports to be included
 
        cat > pkglist <<EOF
        net/bird2@netlink
@@ -25,16 +27,16 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
        ...
        EOF
 
-4. Build the ports
+5. Build the ports
 
-       poudriere bulk -j router -b quarterly -p quarterly -f pkglist
+       poudriere bulk -j router -b latest -p latest -f pkglist
 
-5. Create the router image
+6. Create the router image
 
-       poudriere image -t zfs -j router -s 4g -p quarterly -n router \
+       poudriere image -t zfs -j router -s 4g -p latest -n router \
            -f pkglist -c overlaydir -B pre-script.sh
 
-6. Test the image
+7. Test the image
 
        sh /usr/share/examples/bhyve/vmrun.sh -uE -m 4G -n e1000 -t tap0 -t tap1 \
            -d /usr/local/poudriere/data/images/router.img router
@@ -47,21 +49,15 @@ Largely inspired by [NanoBSD], [ZFS Magic Upgrades], and the [BSD Router Project
 
 2. Update the ports tree
 
-       poudriere ports -u -p quarterly
-
-   or create an updated ports tree
-
-       QUARTERLY_BRANCH=$(date +%YQ)$((($(date +%-m)-1)/3+1))
-       poudriere ports -c -U https://git.freebsd.org/ports.git -B $QUARTERLY_BRANCH \
-           -p quarterly
+       poudriere ports -u -p latest
 
 4. Build the ports
 
-       poudriere bulk -j router -b quarterly -p quarterly -f pkglist
+       poudriere bulk -j router -b latest -p latest -f pkglist
 
 5. Create a router boot environment (BE)
 
-       poudriere image -t zfs+send+be -j router -s 4g -p quarterly -n router \
+       poudriere image -t zfs+send+be -j router -s 4g -p latest -n router \
            -f pkglist -c overlaydir -B pre-script.sh
 
 6. Test the BE image:
@@ -98,6 +94,19 @@ In order to save configuration changes, issue the following command:
 ```
 
 Configuration changes are then saved to `/cfg`, to overlay the base `/etc` template (NanoBSD-style).
+
+## Using a custom kernel
+
+In order to test experimental features, a custom kernel can be built, using the `router` branch from our FreeBSD repo.
+The file `router-poudriere.conf` contains the `GIT_BASEURL` to be used for creating the jail.
+
+1. Copy poudriere(8) configuration files from `poudriere.d`
+
+       cp -a poudriere.d/ /usr/local/etc/poudriere.d
+
+2. Create a poudriere jail (with a custom kernel)
+
+       poudriere jail -c -j router -m git+http -v router -K Router
 
 ## To do
 
