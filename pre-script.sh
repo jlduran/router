@@ -154,9 +154,6 @@ _zfs_setup_nanobsd_etc()
 	# Remove poudriere-populated rc.conf
 	rm -f etc/rc.conf
 
-	# Remove toor user
-	pw userdel toor
-
 	# Secure ttys
 	sed -i '' -e 's/ secure/ insecure/g' etc/ttys
 	)
