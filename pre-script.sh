@@ -156,6 +156,13 @@ _zfs_setup_nanobsd_etc()
 
 	# Secure ttys
 	sed -i '' -e 's/ secure/ insecure/g' etc/ttys
+
+	# Append os-release info
+	cat <<-EOF > etc/os-release
+	BUILD_ID=$(git describe --tags)
+	VARIANT=Router
+	VARIANT_ID=router
+	EOF
 	)
 }
 
