@@ -54,7 +54,7 @@ VM_TEMPLATE=${WRK_DIR}/vm_template
 usage() {
 	# $1: Cause of displaying usage
 	[ $# -eq 1 ] && echo $1
-	echo "Usage: $0 [-adeEhqsvV] -i FreeBSD-disk-image.img [-n vm-number] [-l LAN-number] [-c core] [-A number of additionnal disks] "
+	echo "Usage: $0 [-adeEhqsvV] -i router-disk-image.img [-n vm-number] [-l LAN-number] [-c core] [-A number of additionnal disks] "
 	echo " -a           Disable full-meshing"
 	echo " -A           Number of additionnal disks"
 	echo " -B           Disable UEFI boot mode (switch back to BIOS mode)"
