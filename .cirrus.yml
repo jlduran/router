@@ -1,11 +1,11 @@
 poudriere_task:
   env:
     GITHUB_TOKEN: ENCRYPTED[!a330bd1134ffd9c9fe13b7ab0fe920dc12c19d297efb0ac3c5492b3d7f1755fcdc05fdf702ad0748c07880abba88419d!]
-    FREEBSD_VERSION: 14.0-RELEASE
+    FREEBSD_VERSION: 14.1-RELEASE
     NO_LIB32: yes
 
   freebsd_instance:
-    image_family: freebsd-14-0
+    image_family: freebsd-14-1
 
   install_dependencies_script:
     - pkg install -y git poudriere-devel jq
@@ -21,10 +21,10 @@ poudriere_task:
     - poudriere bulk -j router -b quarterly -p quarterly -f pkglist
 
   create_router_image_script:
-    - poudriere image -t zfs -j router -s 4g -p quarterly -h router.home -n router -f pkglist -c overlaydir -B pre-script.sh
+    - poudriere image -t zfs -j router -s 4g -p quarterly -h router.home -n router -f pkglist -c overlaydir -B pre-script.sh -X excludefile
 
   create_router_be_script:
-    - poudriere image -t zfs+send+be -j router -s 4g -p quarterly -h router.home -n router -f pkglist -c overlaydir -B pre-script.sh
+    - poudriere image -t zfs+send+be -j router -s 4g -p quarterly -h router.home -n router -f pkglist -c overlaydir -B pre-script.sh -X excludefile
 
 # prepare_artifacts_script:
 #   - mkdir $CIRRUS_WORKING_DIR/router
