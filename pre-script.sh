@@ -155,7 +155,11 @@ _zfs_setup_nanobsd_etc()
 	rm -f etc/rc.conf
 
 	# Secure ttys
-	sed -i '' -e 's/ secure/ insecure/g' etc/ttys
+	#sed -i '' -e 's/ secure/ insecure/g' etc/ttys
+
+	# Relocate /var/cron/tabs to /etc/cron/tabs
+	mkdir -p etc/cron/tabs
+	_zfs_tgt_dir2symlink var/cron /etc/cron
 	)
 }
 
