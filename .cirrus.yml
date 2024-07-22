@@ -8,7 +8,7 @@ poudriere_task:
     image_family: freebsd-14-1
 
   install_dependencies_script:
-    - pkg install -y git poudriere-devel jq
+    - pkg install -y git poudriere-devel
 
   create_poudriere_jail_script:
     - poudriere jail -c -j router -v $FREEBSD_VERSION -K GENERIC
