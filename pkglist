@@ -1,6 +1,7 @@
 benchmarks/iperf3
 dns/bind918
 editors/vim
+graphics/ttyplot
 lang/python
 net/arping
 net/bird2@netlink
