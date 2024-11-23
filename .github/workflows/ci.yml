@@ -1,0 +1,54 @@
+name: Build Router
+
+on:
+  push:
+    branches:
+      - '*'
+
+jobs:
+  build:
+    name: Build a Router disk image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Store parameters
+        run: |
+          echo "FREEBSD_VERSION=14.1" >> $GITHUB_ENV
+          # XXX use choices
+          echo "PORTS_TREE=$(date +%YQ)$((($(date +%-m) - 1) / 3 + 1))" >> $GITHUB_ENV
+          echo "$GITHUB_ENV"
+
+      - name: Build Router
+        uses: cross-platform-actions/action@v0.25.0
+        with:
+          operating_system: freebsd
+          version: ${{ env.FREEBSD_VERSION }}
+          run: |
+            # Install dependencies
+            sudo pkg install -y git poudriere-devel
+
+            # Make the poudriere(8) DISTFILES_CACHE directory
+            sudo mkdir -p /usr/ports/distfiles
+
+            # Create Poudriere jail
+            sudo poudriere jail -c -j router -v ${{ env.FREEBSD_VERSION }}-RELEASE -K GENERIC
+
+            # Create ports tree
+            sudo poudriere ports -c -U https://git.freebsd.org/ports.git -B 2024Q4 -p quarterly
+
+            # Build ports
+            sudo poudriere bulk -j router -b quarterly -p quarterly -f pkglist
+
+            # Create router image
+            sudo poudriere image -t zfs -j router -s 4g -p quarterly -h router.home -n router -f pkglist -c overlaydir -B pre-script.sh -X excludefile
+
+            # Create router BE
+            sudo poudriere image -t zfs+send+be -j router -s 4g -p quarterly -h router.home -n router -f pkglist -c overlaydir -B pre-script.sh -X excludefile
+
+      - name: Upload Router disk image
+        uses: actions/upload-artifact@v4
+        with:
+          name: router
+          path: /usr/local/poudriere/data/images/
+          if-no-files-found: ignore
