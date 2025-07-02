@@ -31,7 +31,7 @@ set -eu
 
 ### Global variables ###
 ADD_DISKS_NUMBER=0
-ADD_DISKS_SIZE="8G"	# Additionnal disks size in GB
+ADD_DISKS_SIZE="8G"	# Additional disks size in GB
 CORES=1
 DEBUG=false
 DISK_CTRL="virtio-blk"
@@ -54,9 +54,9 @@ VM_TEMPLATE=${WRK_DIR}/vm_template
 usage() {
 	# $1: Cause of displaying usage
 	[ $# -eq 1 ] && echo $1
-	echo "Usage: $0 [-adeEhqsvV] -i router-disk-image.img [-n vm-number] [-l LAN-number] [-c core] [-A number of additionnal disks] "
+	echo "Usage: $0 [-adeEhqsvV] -i router-disk-image.img [-n vm-number] [-l LAN-number] [-c core] [-A number of additional disks] "
 	echo " -a           Disable full-meshing"
-	echo " -A           Number of additionnal disks"
+	echo " -A           Number of additional disks"
 	echo " -B           Disable UEFI boot mode (switch back to BIOS mode)"
 	echo " -c           Number of core per VM (default: ${CORES})"
 	echo " -d           Delete All VMs, including the template"
@@ -71,7 +71,7 @@ usage() {
 	echo " -q           Quiet"
 	echo " -s           Stop all VM"
 	echo " -t           Number of threads per core (default: ${THREADS})"
-	echo " -S           Additionnal disks size (default: ${ADD_DISKS_SIZE})"
+	echo " -S           Additional disks size (default: ${ADD_DISKS_SIZE})"
 	echo " -v           Add a graphic card and enable VNC"
 	echo " -V           Use vale (netmap) switch in place of bridge+tap"
 	echo " -w dirname   Working directory (default: ${WRK_DIR})"
@@ -81,7 +81,7 @@ usage() {
 }
 
 ### Functions ####
-# A usefull function (from: http://code.google.com/p/sh-die/)
+# A useful function (from: http://code.google.com/p/sh-die/)
 die() { echo -n "ERROR: " >&2; echo "$@" >&2; exit 1; }
 
 # Check FreeBSD system pre-requise for starting bhyve
@@ -138,7 +138,7 @@ uncompress_image () {
 		;;
 	*)
 		die "Didn't detect image format: ${FILE_TYPE}"
-        ;;
+		;;
 	esac
 
 	# Once unzip, we need to re-check the format
@@ -179,7 +179,7 @@ destroy_all_if() {
 	IF_LIST=$(ifconfig -l)
 	for i in ${IF_LIST}; do
 		ifconfig $i | grep -q "description: MESH_\|description: LAN_" && \
-			ifconfig $i destroy
+		    ifconfig $i destroy
 	done
 	return 0
 }
@@ -206,7 +206,7 @@ get_free_nmdm () {
 	# Check if /dev/nmdm$1 doesn't exist, and if not use a free one
 	# WARNING: /dev/nmdm are automatically created when direct access to them
 	#          So need to avoid direct test like [ -c /dev/nmdm${1}A ]
-        TMPFILE=$(mktemp /tmp/nmdmlist.XXXXXX) || die "Can not create tmp file"
+	TMPFILE=$(mktemp /tmp/nmdmlist.XXXXXX) || die "Can not create tmp file"
 	find /dev/ -name 'nmdm-router.*A' > $TMPFILE
 	# $1: VM number
 	local i=$1
@@ -222,7 +222,7 @@ run_vm() {
 	# $1: VM number
 	# Destroy previous if already exist
 
-	# Need an infinite loop: This permit to do a reboot initated from the VM
+	# Need an infinite loop: This permit to do a reboot initiated from the VM
 	eval VM_FIRSTBOOT_$1=true
 	while [ true ]; do
 		# load a FreeBSD guest inside a bhyve virtual machine
@@ -253,7 +253,7 @@ run_vm() {
 		# PCI 1:0 Hard drive
 		# PCI 2:0 and next: Network NIC
 		# PCI last:0 ptnetnetmap-memdev (if PTNET&VALE enabled)
-		#   Note: It's not possible to have "hole" in PCI assignement
+		#   Note: It's not possible to have "hole" in PCI assignment
 		VM_COMMON="bhyve -c cpus=${NCPUS},cores=${CORES},threads=${THREADS} -S -m ${RAM} -A -H -P -s 0:0,hostbridge -s 0:1,lpc"
 		VM_BOOT=""
 		( $UEFI ) && VM_BOOT="-l bootrom,/usr/local/share/uefi-firmware/BHYVE_UEFI.fd"
@@ -305,7 +305,7 @@ create_interface() {
 	# $3: Name of the interface bridge to join (only for tap interface)
 	# echo: The name of the interface created (bridgeX or tapY)
 
-	[ $# -lt 2 ] && die "Bug when calling create_interface(): not enought argument"
+	[ $# -lt 2 ] && die "Bug when calling create_interface(): not enough argument"
 
 	# Begin to search if interface already exist
 	local IF_LIST=$(ifconfig -g $2)
@@ -330,76 +330,76 @@ create_interface() {
 [ $(id -u) -ne 0 ] && usage "ERROR: not executed as root"
 
 while getopts "aBc:dghD:ei:l:m:n:qt:svVw:A:S:" FLAG; do
-    case "${FLAG}" in
-	a)
-		MESHED=false
-		;;
-	A)
-		ADD_DISKS_NUMBER="$OPTARG"
-		;;
-	B)
-		UEFI=false
-		;;
-	c)
-		CORES="$OPTARG"
-		;;
-	d)
-		erase_all_vm
-		destroy_all_if
-		return 0
-		;;
-	D)
-		DISK_CTRL="$OPTARG"
-		;;
-	e)
-		VNIC="e1000"
-		;;
-	g)
-		DEBUG=true
-		;;
-	h)
-		usage
-		;;
-	i)
-		FILE="$OPTARG"
-        ;;
-	l)
-		LAN="$OPTARG"
-		;;
-	m)
-		RAM="$OPTARG"
-		;;
-	n)
-		NUMBER_VM="$OPTARG"
-		;;
-	q)
-		VERBOSE=false
-		;;
-	s)
-		stop_all_vm
-		return 0
-		;;
-	S)
-		ADD_DISKS_SIZE="$OPTARG"
-		;;
-	t)
-		THREADS="$OPTARG"
-		;;
-	v)
-		VNC=true
-		;;
-	V)
-		VALE=true
-		;;
-	w)
-		WRK_DIR="$OPTARG"
-		[ -d "${WRK_DIR} ]" || usage "ERROR: Working directory not found"
-		VM_TEMPLATE="${WRK_DIR}/vm_template"
-		;;
-	*)
-		break
-        esac
-done #while
+	case "${FLAG}" in
+		a)
+			MESHED=false
+			;;
+		A)
+			ADD_DISKS_NUMBER="$OPTARG"
+			;;
+		B)
+			UEFI=false
+			;;
+		c)
+			CORES="$OPTARG"
+			;;
+		d)
+			erase_all_vm
+			destroy_all_if
+			return 0
+			;;
+		D)
+			DISK_CTRL="$OPTARG"
+			;;
+		e)
+			VNIC="e1000"
+			;;
+		g)
+			DEBUG=true
+			;;
+		h)
+			usage
+			;;
+		i)
+			FILE="$OPTARG"
+			;;
+		l)
+			LAN="$OPTARG"
+			;;
+		m)
+			RAM="$OPTARG"
+			;;
+		n)
+			NUMBER_VM="$OPTARG"
+			;;
+		q)
+			VERBOSE=false
+			;;
+		s)
+			stop_all_vm
+			return 0
+			;;
+		S)
+			ADD_DISKS_SIZE="$OPTARG"
+			;;
+		t)
+			THREADS="$OPTARG"
+			;;
+		v)
+			VNC=true
+			;;
+		V)
+			VALE=true
+			;;
+		w)
+			WRK_DIR="$OPTARG"
+			[ -d "${WRK_DIR} ]" || usage "ERROR: Working directory not found"
+			VM_TEMPLATE="${WRK_DIR}/vm_template"
+			;;
+		*)
+			break
+	esac
+done
 
 shift $((OPTIND-1))
 
@@ -451,17 +451,17 @@ TMPCONSOLE=$(mktemp /tmp/console.XXXXXX)
 
 # Enter the main loop for each VM
 while [ $i -le $NUMBER_VM ]; do
-	is_running ${VM_NAME}_$i && die "VM ${VM_NAME}_$i already runing"
+	is_running ${VM_NAME}_$i && die "VM ${VM_NAME}_$i already running"
 	# Erase already existing VM disk only if:
 	#   a image is given
-	#   OR it didn't already exists
-	# TO DO: Need to use UFS or ZFS snapshot in place of copying the full disk
+	#   OR it did not already exists
+	# TODO: Need to use UFS or ZFS snapshot in place of copying the full disk
 	[ ! -f ${WRK_DIR}/${VM_NAME}_$i -o -n "${FILE}" ] && cp ${VM_TEMPLATE} ${WRK_DIR}/${VM_NAME}_$i
 	# Network_config
 	NIC_NUMBER=0
-    if ( ${VERBOSE} ); then
+	if ( ${VERBOSE} ); then
 		if ( ${DEBUG} ); then
-			echo "VM $i (debugger port: 900$i) has the following NIC:"
+			echo "VM $i (debugger port: 900$i) has the following NIC:"
 		else
 			echo "VM $i has the following NIC:"
 		fi
@@ -507,7 +507,7 @@ while [ $i -le $NUMBER_VM ]; do
 				# Need to manage correct mac address
 				[ $i -le 9 ] && MAC_I="0$i" || MAC_I="$i"
 				[ $j -le 9 ] && MAC_J="0$j" || MAC_J="$j"
-				# We allways use "low number - high number" for identify cables
+				# We always use "low number - high number" for identify cables
 				if [ $i -le $j ]; then
 					if (${VALE} ); then
 						SW_CMD="vale${i}${j}:${VM_NAME}_$i"
@@ -573,18 +573,18 @@ ${SW_CMD},mac=58:9c:fc:\${MAC_J}:\${MAC_I}:\${MAC_I}\"
 		fi
 		eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},\${VNIC},\
 ${SW_CMD},mac=58:9c:fc:\${MAC_J}:00:\${MAC_I}\"
-        NIC_NUMBER=$(( NIC_NUMBER + 1 ))
-        j=$(( j + 1 ))
+		NIC_NUMBER=$(( NIC_NUMBER + 1 ))
+		j=$(( j + 1 ))
 	done # while [ $j -le $LAN ]
 
 	#if (${VALE} ); then
 		# PCI_SLOT must be between 0 and 7
 		# Need to increase PCI_BUS number if slot is more than 7
-	#	PCI_BUS=$(( NIC_NUMBER / 8 ))
-	#	PCI_SLOT=$(( NIC_NUMBER - 8 * PCI_BUS ))
+		#PCI_BUS=$(( NIC_NUMBER / 8 ))
+		#PCI_SLOT=$(( NIC_NUMBER - 8 * PCI_BUS ))
 		# All PCI_BUS before 2 are already used
-	#	PCI_BUS=$(( PCI_BUS + 2 ))
-	#	eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},ptnetmap-memdev\"
+		#PCI_BUS=$(( PCI_BUS + 2 ))
+		#eval VM_NET_${i}=\"\${VM_NET_${i}} -s \${PCI_BUS}:\${PCI_SLOT},ptnetmap-memdev\"
 	#fi
 	# Start VM
 	run_vm $i &
